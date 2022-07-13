@@ -1,7 +1,6 @@
-# 국내외 주식 매매, 가상자산 매매, 배당과 이자 등 금융활동에서 발생하는 소득에 대한 세액 계산
-# 증권거래세 등 사업자(증권사 등)를 통해 원천징수되는 세액은 제외함
+# 금융 활동(국내외 주식 매매, 가상자산 매매, 배당과 이자)에서 발생하는 소득에 대한 세액 계산
 
-# 1. 금융소득종합과세(종합소득세 중 금융소득에 해당되는 세액만 계산) (2021년 기준 누진세율 적용)
+# 1. 금융소득종합과세(2021년 기준 누진세율)
 def Global_Income_Taxation():
     while True:
         try:
@@ -46,8 +45,8 @@ def Global_Income_Taxation():
             print("   입력 오류 : 문자 X / 숫자 사이 쉼표, 띄어쓰기 X")
 
 
-# 2. 금융투자소득세 계산(양도소득세)
-# 2-1. 현 정부(P.윤석열) : 보유기간(전종목 1년 이상 보유한 것으로 판단) 및 기업 규모에 따른 과세 차이는 제외함
+# 2. 금융투자소득세(양도소득세)
+# 2-1. 현재   * 보유기간(전종목 1년 이상 보유한 것으로 판단) 및 기업 규모에 따른 과세 차이는 제외
 def YOON_Transfer_Income_Taxation():
     while True:
         try:
@@ -59,36 +58,32 @@ def YOON_Transfer_Income_Taxation():
             print("    => 국외주식에 대해서는 대주주 요건 해당 없음")
             Check=input("   대주주 요건 충족하는지? (네: Y , 아니오: N) :  ")
 
-            while Check != "Y" or Check != "N":
-                if Check=="Y":
+            while Check != "Y" or Check != "y" or Check != "N" or Check != "n":
+                if Check=="Y" or Check=="y":
                     TaxBase=DS_Income+FS_Income-2500000
                     if TaxBase <= 2500000:
                         TaxBase=0
-                        print("   과세표준 : {0:,}(원)".format(TaxBase))
-                        print("2. 양도소득세 과세 대상자 아님")
+                        print("2. 양도소득세 과세 대상자 아님   * 과세표준 : {0:,}(원)".format(TaxBase))
                         return DS_Income, FS_Income, int(0)
                     else:
-                        print("   과세표준 : {0:,}(원)".format(TaxBase))
                         if TaxBase <= 300000000:
                             YTIT=TaxBase*0.22
-                            print("2. 양도소득세 : {0:,}(원)".format(round(YTIT)))
+                            print("2. 양도소득세 : {0:,}(원)   * 과세표준 : {1:,}(원)".format(round(YTIT), TaxBase))
                             return DS_Income, FS_Income, int(YTIT)
                         else:
                             YTIT=TaxBase*0.275-300000000*0.055
-                            print("2. 양도소득세 : {0:,}(원)".format(round(YTIT)))
+                            print("2. 양도소득세 : {0:,}(원)   * 과세표준 : {1:,}(원)".format(round(YTIT), TaxBase))
                             return DS_Income, FS_Income, int(YTIT)
 
-                elif Check=="N":
+                elif Check=="N" or Check=="n":
                     if FS_Income <= 2500000:
                         TaxBase=0
-                        print("   과세표준 : {0:,}(원)".format(TaxBase))
-                        print("2. 양도소득세 과세 대상자 아님")
+                        print("2. 양도소득세 과세 대상자 아님   * 과세표준 : {0:,}(원)".format(TaxBase))
                         return DS_Income, FS_Income, int(0)
                     else:
                         TaxBase=FS_Income-2500000
-                        print("   과세표준 : {0:,}(원)".format(TaxBase))
                         YTIT=TaxBase*0.22
-                        print("2. 양도소득세 : {0:,}(원)".format(round(YTIT)))
+                        print("2. 양도소득세 : {0:,}(원)   * 과세표준 : {1:,}(원)".format(round(YTIT), TaxBase))
                         return DS_Income, FS_Income, int(YTIT)
 
                 print("   입력 오류 : 입력내용 다시 확인 바랍니다(대/소문자 구분 확인)")
@@ -97,8 +92,7 @@ def YOON_Transfer_Income_Taxation():
         except ValueError:
             print("   입력 오류 : 문자 X / 숫자 사이 쉼표, 띄어쓰기 X")
 
-# 2-2. 최신 개정 내용 (2023년 도입 예정, 2025년까지 연기)
-# 이월결손금, 반기 원천징수 등에 대한 관련 내용 제외
+# 2-2. 예정   * 2025년까지 연기 / 이월결손금, 반기 원천징수 등에 대한 관련 내용 제외
 def Transfer_Income_Taxation():
     while True:
         try:
@@ -115,27 +109,25 @@ def Transfer_Income_Taxation():
                 TaxBase_FS=FS_Income-2500000
 
             TaxBase=TaxBase_DS+TaxBase_FS
-            print("   과세표준 : {0:,}(원)".format(TaxBase))
 
             if TaxBase <= 300000000:
                 TIT=TaxBase*0.22
                 if TIT == 0:
-                    print("2. 금융투자소득세(양도소득세) 과세 대상자 아님")
+                    print("2. 금융투자소득세(양도소득세) 과세 대상자 아님   * 과세표준 : {0:,}".format(TaxBase))
                     return DS_Income, FS_Income, int(TIT)
                 else:
-                    print("2. 금융투자소득세(양도소득세) : {0:,}(원)".format(round(TIT)))
+                    print("2. 금융투자소득세(양도소득세) : {0:,}(원)   * 과세표준 : {1:,}".format(round(TIT), TaxBase))
                     return DS_Income, FS_Income, int(TIT)
             else:
                 TIT=TaxBase*0.275-300000000*0.055
-                print("2. 금융투자소득세(양도소득세) : {0:,}(원)".format(round(TIT)))
+                print("2. 금융투자소득세(양도소득세) : {0:,}(원)   * 과세표준 : {1:,}".format(round(TIT), TaxBase))
                 return DS_Income, FS_Income, int(TIT)
 
         except ValueError:
             print("   입력 오류 : 문자 X / 숫자 사이 쉼표, 띄어쓰기 X")
 
 
-# 3. 기타소득세(가상자산 매매에 대한, 매매 : 가상자산과 현물자산 간의 거래) (2025년까지 연기)
-# 교환거래(가상자산 간의 거래)로 인한 소득 금액은 다루지 않았음
+# 3. 기타소득세(가상자산과 현물자산 간의 거래에 대한)   * (2025년까지 연기) / 교환거래(가상자산 간의 거래)로 인한 소득 금액은 다루지 않았음
 def CryptoCurrency_Taxation():
     while True:
         try:
@@ -153,24 +145,39 @@ def CryptoCurrency_Taxation():
 
 # 4. 세액 총합
 def Tax_Sum():
-    print("안내 : 금융 활동에서 발생한 소득의 세금에 대한 계산기임.")
-    print("       (근로 소득 등의 다른 소득원에 대해서는 다루지 않음)\n")
+    print("* 안내 : 금융 활동에서 발생한 소득의 세금에 대한 계산기임.")
+    print("         (근로 소득 등의 다른 소득원에 대해서는 다루지 않음)\n")
     Div_Int, Div_Int_Tax = Global_Income_Taxation()
     DS_Income, FS_Income, DFS_Income_Tax = YOON_Transfer_Income_Taxation()
     # DS_Income, FS_Income, DFS_Income_Tax = Transfer_Income_Taxation()
     C_Income, C_Income_Tax = CryptoCurrency_Taxation()
+
     print("-"*50)
     print("4. 세액 계산 결과")
+    print("   a. 금융소득(배당+이자) : {0:,}원".format(Div_Int))
+    print("   b. 국내주식 양도소득   : {0:,}원".format(DS_Income))
+    print("   c. 국외주식 양도소득   : {0:,}원".format(FS_Income))
+    print("   d. 가상자산 소득       : {0:,}원".format(C_Income))
     Earning_Before_Tax = Div_Int+DS_Income+FS_Income+C_Income
-    print("(a + b + c + d) 세전 수익: {0:,}원".format(Earning_Before_Tax))
-    Earning_After_Tax = Earning_Before_Tax-(Div_Int_Tax+DFS_Income_Tax+C_Income_Tax)
-    print("                세후 수익: {0:,}원".format(Earning_After_Tax))
+    print("   세전 수익: {0:,}원   * (a + b + c + d)\n".format(Earning_Before_Tax))
+
+    print("   1. 종합소득세(배당, 이자) : {0:,}원".format(Div_Int_Tax))
+    print("   2. 양도소득세(국내외주식) : {0:,}원".format(DFS_Income_Tax))
+    print("   3. 기타소득세(가상자산)   : {0:,}원".format(C_Income_Tax))
     Sum_Tax = Div_Int_Tax+DFS_Income_Tax+C_Income_Tax
-    print("(1 + 2 + 3)     세금 지출: {0:,}원".format(Sum_Tax))
+
+    print("   세금 지출: {0:,}원   * (1 + 2 + 3)\n".format(Sum_Tax))
+    Earning_After_Tax = Earning_Before_Tax-(Div_Int_Tax+DFS_Income_Tax+C_Income_Tax)
+
+    print("   세후 수익: {0:,}원   * (a + b + c + d) - (1 + 2 + 3)".format(Earning_After_Tax))
+    print("-"*50)
+
+    quit=str(input("프로그램 종료('Q' 누르기) : "))
+    if quit == "q" or "Q":
+        print("=> 이용해주셔서 감사합니다.")
 
 
-Tax_Sum()
-# 개선 1. 출력값 좀 더 깔끔하게 정리
-# 개선 2. 이 파일 안에서만 함수 작동하도록 편집
-# 개선 2. 날짜에 따라 적용되는 함수 구분(2025년부터 적용되는 함수들 제외시키기)
-# 개선 3. exe파일로 만들기
+if __name__=="__main__":
+    Tax_Sum()
+
+# 개선 1. 날짜에 따라 적용되는 함수 구분(2025년부터 적용되는 함수들; TIT, CCT 제외시키기)
