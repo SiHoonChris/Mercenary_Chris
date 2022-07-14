@@ -1,4 +1,11 @@
-# *금융 활동(국내외 주식 매매, 가상자산 매매, 배당과 이자)에서 발생하는 소득에 대한 세액 계산
+# 금융 활동(국내외 주식 매매, 가상자산 매매, 배당과 이자)에서 발생하는 소득에 대한 세액 계산
+
+import datetime
+today=datetime.date.today()
+# td=datetime.timedelta(days=365*4)
+# today=today+td
+intro=datetime.date(2025,1,1)
+
 
 # 1. 금융소득종합과세(2021년 기준 누진세율)
 def Global_Income_Taxation():
@@ -147,13 +154,19 @@ def CryptoCurrency_Taxation():
 def Tax_Sum():
     print("* 안내 : 금융 활동에서 발생한 소득의 세금에 대한 계산기임.")
     print("         (근로 소득 등의 다른 소득원에 대해서는 다루지 않음)\n")
-    Div_Int, Div_Int_Tax = Global_Income_Taxation()
-    DS_Income, FS_Income, DFS_Income_Tax = YOON_Transfer_Income_Taxation()
-    # DS_Income, FS_Income, DFS_Income_Tax = Transfer_Income_Taxation()
-    C_Income, C_Income_Tax = CryptoCurrency_Taxation()
+
+    if today < intro: # 도입 전(2025년 이전)
+        Div_Int, Div_Int_Tax = Global_Income_Taxation()
+        DS_Income, FS_Income, DFS_Income_Tax = YOON_Transfer_Income_Taxation()
+        C_Income, C_Income_Tax = CryptoCurrency_Taxation()
+        C_Income_Tax=0
+    else: #도입 후(2025년부터, 이후)
+        Div_Int, Div_Int_Tax = Global_Income_Taxation()
+        DS_Income, FS_Income, DFS_Income_Tax = Transfer_Income_Taxation()
+        C_Income, C_Income_Tax = CryptoCurrency_Taxation()
 
     print("-"*50)
-    print("4. 세액 계산 결과")
+    print("4. 세액 계산 결과 ({0})".format(today))
     print("   a. 금융소득(배당+이자) : {0:,}원".format(Div_Int))
     print("   b. 국내주식 양도소득   : {0:,}원".format(DS_Income))
     print("   c. 국외주식 양도소득   : {0:,}원".format(FS_Income))
@@ -179,5 +192,3 @@ def Tax_Sum():
 
 if __name__=="__main__":
     Tax_Sum()
-
-# 개선 1. 날짜에 따라 적용되는 함수 구분(2025년부터 적용되는 함수들; TIT, CCT 제외시키기)
