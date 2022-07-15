@@ -1,11 +1,8 @@
-# 금융 활동(국내외 주식 매매, 가상자산 매매, 배당과 이자)에서 발생하는 소득에 대한 세액 계산
+# 금융 활동에서 발생하는 소득에 대한 세액 계산
 
 import datetime
 today=datetime.date.today()
-# td=datetime.timedelta(days=365*4)
-# today=today+td
 intro=datetime.date(2025,1,1)
-
 
 # 1. 금융소득종합과세(2021년 기준 누진세율)
 def Global_Income_Taxation():
@@ -50,7 +47,6 @@ def Global_Income_Taxation():
                 raise ValueError
         except:
             print("   입력 오류 : 문자 X / 숫자 사이 쉼표, 띄어쓰기 X")
-
 
 # 2. 금융투자소득세(양도소득세)
 # 2-1. 현재   * 보유기간(전종목 1년 이상 보유한 것으로 판단) 및 기업 규모에 따른 과세 차이는 제외
@@ -133,7 +129,6 @@ def Transfer_Income_Taxation():
         except ValueError:
             print("   입력 오류 : 문자 X / 숫자 사이 쉼표, 띄어쓰기 X")
 
-
 # 3. 기타소득세(가상자산과 현물자산 간의 거래에 대한)   * (2025년까지 연기) / 교환거래(가상자산 간의 거래)로 인한 소득 금액은 다루지 않았음
 def CryptoCurrency_Taxation():
     while True:
@@ -141,14 +136,13 @@ def CryptoCurrency_Taxation():
             C_Income=int(input("d. 가상자산 소득 : "))
             if C_Income > 2500000:
                 C_Income_Tax=(C_Income-2500000)*0.20
-                print("3. 가상자산소득세(기타소득세) : {0:,}(원)".format(round(C_Income_Tax)))
+                print("3. 가상자산소득세(기타소득세) : {0:,}(원)   * 2025년부터 적용".format(round(C_Income_Tax)))
                 return C_Income, round(C_Income_Tax)
             else:
                 print("3. 가상자산소득세(기타소득세) 대상자 아님")
                 return C_Income, int(0)
         except ValueError:
             print("   입력 오류 : 문자 X / 숫자 사이 쉼표, 띄어쓰기 X")
-
 
 # 4. 세액 총합
 def Tax_Sum():
@@ -167,26 +161,26 @@ def Tax_Sum():
 
     print("-"*50)
     print("4. 세액 계산 결과 ({0})".format(today))
-    print("   a. 금융소득(배당+이자) : {0:,}원".format(Div_Int))
-    print("   b. 국내주식 양도소득   : {0:,}원".format(DS_Income))
-    print("   c. 국외주식 양도소득   : {0:,}원".format(FS_Income))
-    print("   d. 가상자산 소득       : {0:,}원".format(C_Income))
+    print("   a. 금융소득(배당+이자)    : {0:>13,}원".format(Div_Int))
+    print("   b. 국내주식 양도소득      : {0:>13,}원".format(DS_Income))
+    print("   c. 국외주식 양도소득      : {0:>13,}원".format(FS_Income))
+    print("   d. 가상자산 소득          : {0:>13,}원".format(C_Income))
     Earning_Before_Tax = Div_Int+DS_Income+FS_Income+C_Income
-    print("   세전 수익: {0:,}원   * (a + b + c + d)\n".format(Earning_Before_Tax))
+    print("                세전 수익    : {0:>13,}원   * (a + b + c + d)\n".format(Earning_Before_Tax))
 
-    print("   1. 종합소득세(배당, 이자) : {0:,}원".format(Div_Int_Tax))
-    print("   2. 양도소득세(국내외주식) : {0:,}원".format(DFS_Income_Tax))
-    print("   3. 기타소득세(가상자산)   : {0:,}원".format(C_Income_Tax))
+    print("   1. 종합소득세(배당, 이자) : {0:>13,}원".format(Div_Int_Tax))
+    print("   2. 양도소득세(국내외주식) : {0:>13,}원".format(DFS_Income_Tax))
+    print("   3. 기타소득세(가상자산)   : {0:>13,}원".format(C_Income_Tax))
     Sum_Tax = Div_Int_Tax+DFS_Income_Tax+C_Income_Tax
 
-    print("   세금 지출: {0:,}원   * (1 + 2 + 3)\n".format(Sum_Tax))
+    print("                   세금 지출 : {0:>13,}원   * (1 + 2 + 3)\n".format(Sum_Tax))
     Earning_After_Tax = Earning_Before_Tax-(Div_Int_Tax+DFS_Income_Tax+C_Income_Tax)
 
-    print("   세후 수익: {0:,}원   * (a + b + c + d) - (1 + 2 + 3)".format(Earning_After_Tax))
+    print("                   세후 수익 : {0:>13,}원   * (a + b + c + d) - (1 + 2 + 3)".format(Earning_After_Tax))
     print("-"*50)
 
-    quit=str(input("프로그램 종료('Q' 누르기) : "))
-    if quit == "q" or "Q":
+    quit=input("프로그램 종료(아무 키나 누르기) ")
+    if quit:
         print("=> 이용해주셔서 감사합니다.")
 
 
