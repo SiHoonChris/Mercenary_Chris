@@ -26,7 +26,9 @@ To_date=datetime.date(2022,7,1)
 # 개선1 : input 활용하여, 프로그램 작동 시 사용자가 원하는 날짜 입력할 수 있도록 수정
 
 
+
 def us_report(*CIKs):
+
     for CIK in CIKs:
         url = "https://www.sec.gov/edgar/browse/?CIK={}&owner=exclude".format(CIK)
         browser.get(url)
@@ -52,30 +54,55 @@ def us_report(*CIKs):
             filing_dates=soup.find("tbody").find_all("td", attrs={"class":"sorting_1"})[i].get_text()  # 파일링된 날짜 출력
             if str(From_date) <= filing_dates <= str(To_date):
                 print("   {0}. [{1}] ".format(idx, form_types), form_descriptions, " ({0})".format(filing_dates))
-                print("      https://www.sec.gov/"+links)
+                if idx < 10:
+                    print("      https://www.sec.gov/"+links)
+                else:
+                    print("       https://www.sec.gov/"+links)
             else:
                 continue
         
         print("-"*100)
-# 개선2 : 출력문 관련
-#         1) 종목명 옆에 가져온 파일 갯수 표시, 예시 : [Apple Inc.](5)
-#         2) 가져온 파일 정보 앞에 번호 붙이기, 예시 : 1.  [8-K]    Current report  (2022-06-03)
-#         3) form_type, description, filing date 정렬
-# 해결2 : 출력문 관련
-#         1) 새 변수 cnt 부여
-#         2) len(number_of_lists)에 대한 enumerate 사용, start=1
-#         3) Example)
-#            1. [S-8]  Securities to be offered to employees in employee benefit plans  (2022-04-29) 
-#               https://www.sec.gov//Archives/edgar/data/0000320193/000119312522128368/d332661ds8.htm
 
+    print("--- END ---\n")
 # 개선3 : 출력문 관련
 #         1) 출력된 파일이 9개가 넘어가니까 원하는 출력문 형식이 살짝 깨짐
-
-# CIKs : 320193 AAPL /  1018724 AMZN / 1652044 GOOGL / 200406 JNJ / 21344 KO / 936468 LMT / 789019 MSFT
-us_report("320193", "1018724", "1652044", "200406", "21344", "936468", "789019")
+# 해결3 : 1) idx 값에 따른 출력문 구분
 # 문제!!! : GOOGL은 3번부터, LMT는 2번부터 파일 번호 출력. 왜???
 
 
 
 # 2. 국내 주식
+def kr_report(*CODEs):
+
+    for CODE in CODEs:
+        url="https://dart.fss.or.kr/"
+        browser.get(url)
+        time.sleep(3)
+        browser.find_element_by_xpath("//*[@id='textCrpNm2']").send_keys(CODE)
+        browser.find_element_by_xpath("//*[@id='searchForm2']/div[1]/div[3]/a").click()
+        time.sleep(3)
+        Start_date=str(From_date).replace("-", "")
+        End_date=str(To_date).replace("-", "")
+        browser.find_element_by_xpath("//*[@id='startDate']").clear()
+        browser.find_element_by_xpath("//*[@id='startDate']").send_keys(Start_date)
+        browser.find_element_by_xpath("//*[@id='endDate']").clear()
+        browser.find_element_by_xpath("//*[@id='endDate']").send_keys(End_date)
+        browser.find_element_by_xpath("//*[@id='maxResultsCb']/option[4]").click()  # 조회건수 100으로 설정
+        browser.find_element_by_xpath("//*[@id='searchForm']/div[2]/div[2]/a[1]").click()  # selenium으로 웹페이지 설정
+
+        soup = BeautifulSoup(browser.page_source, "lxml")  # beautifulsoup으로 웹페이지 정보 가져오기
+        name = soup.find("span", attrs={"class":"innerWrap"}).find("a").get_text().strip()
+        print("[{0}]".format(name))
+        print("-"*100)
+
+    print("--- END ---\n")
+# 조건문 설정 필요 : 
+# 다운받을 파일의 분량이 1페이지 안에 다 안끝날 수 있음. - 2,3, ... 페이지 내용 갖고 오기 위한 조건문 필요 
+
+
+
 # 3. 다 끌어오기
+# CIKs : 320193 AAPL /  1018724 AMZN / 1652044 GOOGL / 200406 JNJ / 21344 KO / 936468 LMT / 789019 MSFT
+us_report("320193", "1018724", "1652044", "200406", "21344", "936468", "789019")
+kr_report("005930", "000660")
+# CODE : 005930 삼성전자, 000660 SK하이닉스
