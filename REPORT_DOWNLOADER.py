@@ -17,7 +17,6 @@ options = webdriver.ChromeOptions()
 options.headless = False
 options.add_argument("window-size=1920x1080")
 options.add_argument("user-agent="+headers)
-browser=webdriver.Chrome(options=options)
 import time
 
 import datetime
@@ -26,8 +25,9 @@ To_date=datetime.date(2022,7,1)
 # 개선1 : input 활용하여, 프로그램 작동 시 사용자가 원하는 날짜 입력할 수 있도록 수정
 
 
-
 def us_report(*CIKs):
+
+    browser=webdriver.Chrome(options=options)
 
     for CIK in CIKs:
         url = "https://www.sec.gov/edgar/browse/?CIK={}&owner=exclude".format(CIK)
@@ -45,7 +45,7 @@ def us_report(*CIKs):
             filing_dates=soup.find("tbody").find_all("td", attrs={"class":"sorting_1"})[i].get_text()  # 파일링된 날짜 출력
             if str(From_date) <= filing_dates <= str(To_date):
                 cnt+=1
-        print("[{0}]({1})".format(name.get_text(), cnt))
+        print("[{0}]({1})".format(name.get_text(), cnt))  # [종목명](조건에 맞는 파일 수)
 
         for idx, i in enumerate(range(0, len(number_of_lists)), start=1):  # table의 row들 갯수 바탕으로 넘버 부여(i)
             form_types=soup.find("tbody").find_all("td", attrs={"class":"dtr-control"})[i].get_text()  # 내용 타입
@@ -55,24 +55,23 @@ def us_report(*CIKs):
             if str(From_date) <= filing_dates <= str(To_date):
                 print("   {0}. [{1}] ".format(idx, form_types), form_descriptions, " ({0})".format(filing_dates))
                 if idx < 10:
-                    print("      https://www.sec.gov/"+links)
+                    print("      https://www.sec.gov"+links)
                 else:
-                    print("       https://www.sec.gov/"+links)
+                    print("       https://www.sec.gov"+links)
             else:
                 continue
         
         print("-"*100)
 
     print("--- END ---\n")
-# 개선3 : 출력문 관련
-#         1) 출력된 파일이 9개가 넘어가니까 원하는 출력문 형식이 살짝 깨짐
-# 해결3 : 1) idx 값에 따른 출력문 구분
+    browser.quit()
 # 문제!!! : GOOGL은 3번부터, LMT는 2번부터 파일 번호 출력. 왜???
-
 
 
 # 2. 국내 주식
 def kr_report(*CODEs):
+
+    browser=webdriver.Chrome(options=options)
 
     for CODE in CODEs:
         url="https://dart.fss.or.kr/"
@@ -89,20 +88,34 @@ def kr_report(*CODEs):
         browser.find_element_by_xpath("//*[@id='endDate']").send_keys(End_date)
         browser.find_element_by_xpath("//*[@id='maxResultsCb']/option[4]").click()  # 조회건수 100으로 설정
         browser.find_element_by_xpath("//*[@id='searchForm']/div[2]/div[2]/a[1]").click()  # selenium으로 웹페이지 설정
+        time.sleep(3)
 
         soup = BeautifulSoup(browser.page_source, "lxml")  # beautifulsoup으로 웹페이지 정보 가져오기
         name = soup.find("span", attrs={"class":"innerWrap"}).find("a").get_text().strip()
-        print("[{0}]".format(name))
+        number_of_lists=soup.find("tbody").find_all("tr")
+        print("[{0}]({1})".format(name, len(number_of_lists)))  # [종목명](조건에 맞는 파일 수)
+
+        for idx, i in enumerate(range(0, len(number_of_lists)), start=1):
+            file_name=soup.find("tbody").find_all("tr")[i].find_all("td", attrs={"class":"tL"})[1].find("a")
+            file_names=file_name.get_text().strip()
+            filing_dates=soup.find("tbody").find_all("tr")[i].find_all("td")[4].get_text()
+            links=file_name["href"]
+            print("   {0:<3} {1}  ({2})".format(str(idx)+".", file_names, filing_dates))
+            if idx < 10:
+                print("      https://dart.fss.or.kr"+links)
+            else:
+                print("       https://dart.fss.or.kr"+links)
+
         print("-"*100)
 
     print("--- END ---\n")
-# 조건문 설정 필요 : 
-# 다운받을 파일의 분량이 1페이지 안에 다 안끝날 수 있음. - 2,3, ... 페이지 내용 갖고 오기 위한 조건문 필요 
-
+    browser.quit()
+# 문제!!! : 가져올 분량이 1페이지를 넘어갈 수도 있음(2,3, ...) / 모든 페이지의 내용 갖고 오기 위한 추가적인 코드 필요
+# 개선2 : "--- END ---" 이후에, 총합 1)몇 개의 종목과, 2) 몇 개의 파일을 가져왔는지 표시/출력
 
 
 # 3. 다 끌어오기
-# CIKs : 320193 AAPL /  1018724 AMZN / 1652044 GOOGL / 200406 JNJ / 21344 KO / 936468 LMT / 789019 MSFT
 us_report("320193", "1018724", "1652044", "200406", "21344", "936468", "789019")
 kr_report("005930", "000660")
+# CIKs : 320193 AAPL /  1018724 AMZN / 1652044 GOOGL / 200406 JNJ / 21344 KO / 936468 LMT / 789019 MSFT
 # CODE : 005930 삼성전자, 000660 SK하이닉스
