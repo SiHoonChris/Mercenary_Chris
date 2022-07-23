@@ -6,9 +6,12 @@
 #       b). 필요한 내용은 바로 확인할 수 있도록 링크 다운로드
 
 # 개선할 점 1 : 프로그램 실행 시 사용자가 원하는 날짜 입력할 수 있도록 코드 작성
+#      해결 1 : input 활용하여 해결
 # 개선할 점 2 : us_report 실행될 때 idx 출력값이 종종 잘못나옴(1이 아니라 다른 숫자에서 시작)
+# 원인 확인 2 : 웹페이지의 From Description에 세부 내용이 추가적으로 붙는 부분이 있는데, 그런 부분이 있을 때 세부내용들까지 다 idx로 카운트됨  
 # 개선할 점 3 : time.sleep을 많이 써서 그런지, 불필요한 코드가 있어서 그런지, selenium 때문인지, 솔직히 좀 느리다.
-
+# 부분 개선 3 : time.sleep(3) ; 169.5164 sec.  =>  time.sleep(2) ; 135.367 sec. , 약 34.15초 단축
+#              (해외 7종목 + 국내 3종목 , 기간 : 2022.01.01 ~ 2022.07.23 , 인터넷 환경 : 모바일 핫스팟)
 
 
 # 0. 모듈/패키지
@@ -23,8 +26,14 @@ options.add_argument("user-agent="+headers)
 import time
 
 import datetime
-From_date=datetime.date(2022,1,1)
-To_date=datetime.date(2022,7,21)
+fy=input("(시작) 연 : ")
+fm=input("(시작) 월 : ")
+fd=input("(시작) 일 : ")
+ty=input("(종료) 연 : ")
+tm=input("(종료) 월 : ")
+td=input("(종료) 일 : ")
+From_date=datetime.date(int(fy),int(fm),int(fd))  # 2022, 1, 1
+To_date=datetime.date(int(ty),int(tm),int(td))  # 2022, 7, 23
 
 
 # 1. 미국 주식
@@ -36,9 +45,9 @@ def us_report(*CIKs):
     for CIK in CIKs:
         url = "https://www.sec.gov/edgar/browse/?CIK={}&owner=exclude".format(CIK)
         browser.get(url)
-        time.sleep(3)
+        time.sleep(2)
         browser.find_element_by_xpath("//*[@id='btnViewAllFilings']").click()
-        time.sleep(3)
+        time.sleep(2)
 
         soup = BeautifulSoup(browser.page_source, "lxml")
         name=soup.find("span", attrs={"id":"name"})
@@ -82,10 +91,10 @@ def kr_report(*CODEs):
     for CODE in CODEs:
         url="https://dart.fss.or.kr/"
         browser.get(url)
-        time.sleep(3)
+        time.sleep(2)
         browser.find_element_by_xpath("//*[@id='textCrpNm2']").send_keys(CODE)
         browser.find_element_by_xpath("//*[@id='searchForm2']/div[1]/div[3]/a").click()
-        time.sleep(3)
+        time.sleep(2)
         Start_date=str(From_date).replace("-", "")
         End_date=str(To_date).replace("-", "")
         browser.find_element_by_xpath("//*[@id='startDate']").clear()
@@ -94,7 +103,7 @@ def kr_report(*CODEs):
         browser.find_element_by_xpath("//*[@id='endDate']").send_keys(End_date)
         browser.find_element_by_xpath("//*[@id='maxResultsCb']/option[4]").click()  # 조회건수 100으로 설정
         browser.find_element_by_xpath("//*[@id='searchForm']/div[2]/div[2]/a[1]").click()  # selenium으로 웹페이지 설정
-        time.sleep(3)
+        time.sleep(2)
 
         soup = BeautifulSoup(browser.page_source, "lxml")  # beautifulsoup으로 웹페이지 정보 가져오기
         name = soup.find("span", attrs={"class":"innerWrap"}).find("a").get_text().strip()
@@ -122,7 +131,7 @@ def kr_report(*CODEs):
 
         else:
             browser.find_element_by_xpath(f"//*[@id='psWrap']/div[2]/ul/li[{len(pages)}]/a").click()
-            time.sleep(3)
+            time.sleep(2)
             soup = BeautifulSoup(browser.page_source, "lxml")
             lists_on_lastpg=soup.find("tbody").find_all("tr")
             list_num=(len(pages)-1)*100+len(lists_on_lastpg)
@@ -130,7 +139,7 @@ def kr_report(*CODEs):
 
             for pg in range(1, len(pages)+1):
                 browser.find_element_by_xpath(f"//*[@id='psWrap']/div[2]/ul/li[{pg}]/a").click()
-                time.sleep(3)
+                time.sleep(2)
                 soup = BeautifulSoup(browser.page_source, "lxml")
 
                 number_of_lists=soup.find("tbody").find_all("tr")
@@ -160,12 +169,6 @@ def kr_report(*CODEs):
     total_num = if_num + else_num
     print(f"----- END ( 종목 : {len(CODEs)}, 내용 : {total_num} ) -----\n")
     browser.quit()
-# 문제 !!!! : 종목명 옆에 가져온 파일 갯수가 실제 파일 갯수와 다름   * [종목명](파일 갯수)
-#             *** 이거 해결하면서 불필요한 코드도 줄이기 ***
-# 해결 !!!! : 종목별 웹페이지 상의 분량 다름. 페이지가 - '1 이하' 와 '1 초과'로 나눠서 조건문 작성
-#             각 조건문 상에서 출력 내용 갯수 추출, total_num으로 합산
-# 개선2 : "--- END ---" 이후에, 총합 1)몇 개의 종목과, 2) 몇 개의 파일을 가져왔는지 표시/출력
-# 해결2 : 1) CIKs, CODEs 내의 변수 갯수 반환(len), 2) 함수 내에 출력된 파일 갯수 세는 변수(CNTs, total_num)
 
 
 # 3. 다 끌어오기
@@ -178,7 +181,6 @@ def Report_Downloader():
     end_time=time.time()
     time_spent = end_time - start_time
     print(f"({str(round((time_spent), 4))} sec.)")
-
 
 
 if __name__=="__main__":
