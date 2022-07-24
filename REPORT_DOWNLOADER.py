@@ -5,14 +5,15 @@
 #       a). 원하는 기간을 입력하여 해당 기간에 대한 내용 다 가져오기
 #       b). 필요한 내용은 바로 확인할 수 있도록 링크 다운로드
 
-# 개선할 점 1 : 프로그램 실행 시 사용자가 원하는 날짜 입력할 수 있도록 코드 작성
-#      해결 1 : input 활용하여 해결
 # 개선할 점 2 : us_report 실행될 때 idx 출력값이 종종 잘못나옴(1이 아니라 다른 숫자에서 시작)
-# 원인 확인 2 : 웹페이지의 From Description에 세부 내용이 추가적으로 붙는 부분이 있는데, 그런 부분이 있을 때 세부내용들까지 다 idx로 카운트됨  
-# 개선할 점 3 : time.sleep을 많이 써서 그런지, 불필요한 코드가 있어서 그런지, selenium 때문인지, 솔직히 좀 느리다.
-# 부분 개선 3 : time.sleep(3) ; 169.5164 sec.  =>  time.sleep(2) ; 135.367 sec. , 약 34.15초 단축
+# 원인 2 : for idx, i in enumerate(range(0, len(number_of_lists)), start=1):...  이후의 조건에 따라
+#          i와 그 i를 참조하는 값들은 걸러지는데, idx(enumerate)는 걸러지지 않는다.
+#          예를 들어, 위에서 4번째부터 가져와야 할 내용이 시작된다 하면, i는 조건문에 의해 4번째 내용부터 잘 가져와지는데
+#          idx는 위에서 1번째부터 내용이 가져와진다.(그래서 다른 내용이 출력 => 1이 나와야 할 때, 4를 출력)
+# 해결 2 : enumerate 안쓰고, for i in range(0, len(number_of_lists)):... 입력.  for문 밖에서 idx=0 값 주고,
+#          if str(From_date) <= filing_dates <= str(To_date):... 안에서 idx=idx+1 입력
+# 부분 개선 3 : time.sleep(2) ; 135.367 sec. => enumerate 없앤 후 ; 130.3726 sec. , 약 4.99초 단축
 #              (해외 7종목 + 국내 3종목 , 기간 : 2022.01.01 ~ 2022.07.23 , 인터넷 환경 : 모바일 핫스팟)
-
 
 # 0. 모듈/패키지
 from bs4 import BeautifulSoup
@@ -61,12 +62,14 @@ def us_report(*CIKs):
         print("[{0}]({1})".format(name.get_text(), CNT))
         CNTs += CNT
 
-        for idx, i in enumerate(range(0, len(number_of_lists)), start=1):
+        idx=0
+        for i in range(0, len(number_of_lists)):
             form_types=soup.find("tbody").find_all("td", attrs={"class":"dtr-control"})[i].get_text()
             form_descriptions=soup.find("tbody").find_all("a", attrs={"class":"document-link"})[i].get_text().replace("Open document", "")
             links=soup.find("tbody").find_all("a", attrs={"class":"document-link"})[i]["href"]
             filing_dates=soup.find("tbody").find_all("td", attrs={"class":"sorting_1"})[i].get_text()
             if str(From_date) <= filing_dates <= str(To_date):
+                idx += 1
                 print("   {0}. [{1}] ".format(idx, form_types), form_descriptions, " ({0})".format(filing_dates))
                 if idx < 10:
                     print("      https://www.sec.gov"+links)
