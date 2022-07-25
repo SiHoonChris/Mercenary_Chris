@@ -1,43 +1,52 @@
 # 국내주식, 미국주식 공시/보고서 다운로더
-# 1) 보유종목과 관심종목에 대한 공시/보고서를 사이트에 들어가서 일일이 확인하기 귀찮음
-# 2) 공시/보고서가 언제 올라올지도 모르는데 매일 들어가서 확인하기도 번거로움
-#    1), 2)를 해결하기 위해...
-#       a). 원하는 기간을 입력하여 해당 기간에 대한 내용 다 가져오기
-#       b). 필요한 내용은 바로 확인할 수 있도록 링크 다운로드
+#    1) 보유종목과 관심종목에 대한 공시/보고서를 사이트에 들어가서 일일이 확인하기 귀찮음
+#    2) 공시/보고서가 언제 올라올지도 모르는데 매일 들어가서 확인하기도 번거로움
 
-# 개선할 점 2 : us_report 실행될 때 idx 출력값이 종종 잘못나옴(1이 아니라 다른 숫자에서 시작)
-# 원인 2 : for idx, i in enumerate(range(0, len(number_of_lists)), start=1):...  이후의 조건에 따라
-#          i와 그 i를 참조하는 값들은 걸러지는데, idx(enumerate)는 걸러지지 않는다.
-#          예를 들어, 위에서 4번째부터 가져와야 할 내용이 시작된다 하면, i는 조건문에 의해 4번째 내용부터 잘 가져와지는데
-#          idx는 위에서 1번째부터 내용이 가져와진다.(그래서 다른 내용이 출력 => 1이 나와야 할 때, 4를 출력)
-# 해결 2 : enumerate 안쓰고, for i in range(0, len(number_of_lists)):... 입력.  for문 밖에서 idx=0 값 주고,
-#          if str(From_date) <= filing_dates <= str(To_date):... 안에서 idx=idx+1 입력
-# 부분 개선 3 : time.sleep(2) ; 135.367 sec. => enumerate 없앤 후 ; 130.3726 sec. , 약 4.99초 단축
-#              (해외 7종목 + 국내 3종목 , 기간 : 2022.01.01 ~ 2022.07.23 , 인터넷 환경 : 모바일 핫스팟)
-
-# 0. 모듈/패키지
 from bs4 import BeautifulSoup
 headers="Mozilla/5.0"
-
 from selenium import webdriver
 options = webdriver.ChromeOptions()
-options.headless = False
+options.headless = True
 options.add_argument("window-size=1920x1080")
 options.add_argument("user-agent="+headers)
 import time
-
 import datetime
-fy=input("(시작) 연 : ")
-fm=input("(시작) 월 : ")
-fd=input("(시작) 일 : ")
-ty=input("(종료) 연 : ")
-tm=input("(종료) 월 : ")
-td=input("(종료) 일 : ")
-From_date=datetime.date(int(fy),int(fm),int(fd))  # 2022, 1, 1
-To_date=datetime.date(int(ty),int(tm),int(td))  # 2022, 7, 23
+
+class Date_Sequence_Error(Exception):
+    def __init__(self, msg):
+        self.msg=msg
+    def __str__(self):
+        return self.msg
 
 
-# 1. 미국 주식
+while True:
+    try:
+        example="<입력 예시>\n\n(시작) 연 : 2021\n(시작) 월 : 12\n(시작) 일 : 20\n(종료) 연 : 2022\n(종료) 월 : 3\n(종료) 일 : 5"
+        print(example+"\n-----------------")
+        fy=input("(시작) 연 : ")
+        fm=input("(시작) 월 : ")
+        fd=input("(시작) 일 : ")
+        ty=input("(종료) 연 : ")
+        tm=input("(종료) 월 : ")
+        td=input("(종료) 일 : ")
+        From_date=datetime.date(int(fy),int(fm),int(fd))
+        To_date=datetime.date(int(ty),int(tm),int(td))
+        Today=datetime.date.today()
+
+        if str(To_date) < str(From_date) :
+            raise Date_Sequence_Error("*** '시작 날짜'가 '종료 날짜' 보다 늦음 ***\n")
+        if str(Today) < str(From_date):
+            raise Date_Sequence_Error("*** '시작 날짜'가 '오늘' 이후 임 ***\n")
+        if str(Today) < str(To_date):
+            raise Date_Sequence_Error("*** '종료 날짜'가 '오늘' 이후 임 ***\n")
+
+        break
+    except ValueError:
+        print("*** 입력 내용 다시 확인! - 문자나 기호 X / <입력 예시> 참고 ***")
+    except Date_Sequence_Error as err:
+        print(err)
+
+
 def us_report(*CIKs):
 
     browser=webdriver.Chrome(options=options)
@@ -84,7 +93,6 @@ def us_report(*CIKs):
     browser.quit()
 
 
-# 2. 국내 주식
 def kr_report(*CODEs):
 
     browser=webdriver.Chrome(options=options)
@@ -104,17 +112,17 @@ def kr_report(*CODEs):
         browser.find_element_by_xpath("//*[@id='startDate']").send_keys(Start_date)
         browser.find_element_by_xpath("//*[@id='endDate']").clear()
         browser.find_element_by_xpath("//*[@id='endDate']").send_keys(End_date)
-        browser.find_element_by_xpath("//*[@id='maxResultsCb']/option[4]").click()  # 조회건수 100으로 설정
-        browser.find_element_by_xpath("//*[@id='searchForm']/div[2]/div[2]/a[1]").click()  # selenium으로 웹페이지 설정
+        browser.find_element_by_xpath("//*[@id='maxResultsCb']/option[4]").click()
+        browser.find_element_by_xpath("//*[@id='searchForm']/div[2]/div[2]/a[1]").click()
         time.sleep(2)
 
-        soup = BeautifulSoup(browser.page_source, "lxml")  # beautifulsoup으로 웹페이지 정보 가져오기
+        soup = BeautifulSoup(browser.page_source, "lxml")
         name = soup.find("span", attrs={"class":"innerWrap"}).find("a").get_text().strip()
         pages=soup.find("div", attrs={"class":"pageSkip"}).find_all("li")
 
         if len(pages) <= 1:
             number_of_lists=soup.find("tbody").find_all("tr")
-            print("[{0}]({1})".format(name, len(number_of_lists)))  # [종목명](조건에 맞는 파일 수)
+            print("[{0}]({1})".format(name, len(number_of_lists)))
 
             for idx, i in enumerate(range(0, len(number_of_lists)), start=1):
                 file_name=soup.find("tbody").find_all("tr")[i].find_all("td", attrs={"class":"tL"})[1].find("a")
@@ -138,7 +146,7 @@ def kr_report(*CODEs):
             soup = BeautifulSoup(browser.page_source, "lxml")
             lists_on_lastpg=soup.find("tbody").find_all("tr")
             list_num=(len(pages)-1)*100+len(lists_on_lastpg)
-            print("[{0}]({1})".format(name, list_num))  # [종목명](조건에 맞는 파일 수)
+            print("[{0}]({1})".format(name, list_num))
 
             for pg in range(1, len(pages)+1):
                 browser.find_element_by_xpath(f"//*[@id='psWrap']/div[2]/ul/li[{pg}]/a").click()
@@ -174,13 +182,10 @@ def kr_report(*CODEs):
     browser.quit()
 
 
-# 3. 다 끌어오기
 def Report_Downloader():
     start_time=time.time()
-    us_report("320193", "1018724", "1652044", "200406", "21344", "936468", "789019")
-    kr_report("000660", "005930", "051910")
-    # CIKs : 320193 AAPL /  1018724 AMZN / 1652044 GOOGL / 200406 JNJ / 21344 KO / 936468 LMT / 789019 MSFT
-    # CODE : 005930 삼성전자  /  000660 SK하이닉스  /  051910 LG화학
+    us_report("320193", "1018724", "1652044", "200406", "21344", "936468", "789019")  # AAPL, AMZN, GOOGL, JNJ, KO, LMT, MSFT
+    kr_report("000660", "005930", "051910")  # SK하이닉스, 삼성전자, LG화학
     end_time=time.time()
     time_spent = end_time - start_time
     print(f"({str(round((time_spent), 4))} sec.)")
