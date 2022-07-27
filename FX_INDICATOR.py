@@ -13,6 +13,7 @@ options.add_argument("user-agent="+headers)
 browser=webdriver.Chrome(options=options)
 from datetime import datetime
 import time
+from openpyxl import Workbook
 
 # a)
 url = "https://kr.investing.com/currencies/usd-krw-historical-data"
@@ -26,10 +27,30 @@ browser.find_element_by_id("endDate").send_keys(str(today))
 browser.find_element_by_xpath("//*[@id='applyBtn']").click()
 time.sleep(3)
 
+file_today=str(today).replace("-",".")
+wb=Workbook()
+ws_a=wb.active
+ws_a.title=f"2022.01.01~{file_today}"
+ws_b=wb.create_sheet("Chart")
+ws_a.append(["DATE", "FX RATE"])
+
+
 soup = BeautifulSoup(browser.page_source, "lxml")
 all_lists=soup.find("tbody").find_all("tr")
 for i in range(0, len(all_lists)):
     dates=all_lists[i].find_all("td")[0].get_text().replace("년 ", "-").replace("월 ", "-").replace("일", "")
     day_fx=all_lists[i].find_all("td")[1].get_text().replace(",", "")
-    print(f"[{dates}]  {day_fx}")
-# 문제 : 프로그램 작동 중에 마우스 움직임 감지되면 로그인 팝업 뜸
+    # print(f"[{dates}]  {day_fx}")
+    ws_a.cell(row=i+2, column=1).value=dates
+    ws_a.cell(row=i+2, column=2).value=day_fx
+
+wb.save(f"2022.01.01~{file_today} , FX(WON-DOLLAR).xlsx")
+
+# 문제1 : 프로그램 작동 중에 마우스 움직임 감지되면 로그인 팝업 뜸
+# 문제2 : 데이터를 가져올 때, 날짜 순서가 내림차순(가장 최근이 맨위에, 시작일이 맨아래에)임. 반대로 뒤집어야 함
+# 문제3 : 날짜 중간중간 비어있는 날짜 있음. 해당 날짜 채우고, 그 날에 대한 FX는 전날 값 복붙
+
+
+
+
+
