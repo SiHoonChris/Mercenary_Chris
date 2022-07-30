@@ -45,26 +45,34 @@ ws_a.append(["DATE", "", "FX RATE"])
 ws_a.column_dimensions["A"].width=11
 ws_a.column_dimensions["B"].width=11  # only two column needed
 ws_a.column_dimensions["C"].width=9
+
+timedelta=today-ref_date
+rows_date=timedelta.days+1
+td=datetime.timedelta(days=1)
+for d in range(2, rows_date+2):
+    ws_a["A{}".format(d)]=ref_date
+    ref_date += td
 print("=> OPEN THE EXCEL - PRIMARY SETTING")
 
 soup = BeautifulSoup(browser.page_source, "lxml")
 all_lists=soup.find("tbody").find_all("tr")
-timedelta=today-ref_date
-rows_date=timedelta.days+1
-td=datetime.timedelta(days=1)
-
-all_dates=[]  # index 범위 : 0 ~ len(all_lists)-1
-all_day_fx=[]  # index 범위 : 0 ~ len(all_lists)-1
 for i in range(0, len(all_lists)):
     dates=all_lists[i].find_all("td")[0].get_text().replace("년 ", "-").replace("월 ", "-").replace("일", "")
     day_fx=all_lists[i].find_all("td")[1].get_text().replace(",", "")
-    ws_a.cell(row=(len(all_lists)+1)-i, column=2).value=dates    # original : column 1
-    ws_a.cell(row=(len(all_lists)+1)-i, column=3).value=day_fx   # original : column 2
-    all_dates.append(dates)
-    all_day_fx.append(day_fx)
-for d in range(2, rows_date+2):
-    ws_a["A{}".format(d)]=ref_date
-    ref_date += td
+    ws_a.cell(row=(len(all_lists)+1)-i, column=2).value=dates
+    ws_a.cell(row=(len(all_lists)+1)-i, column=3).value=day_fx
+
+# !!!!!!!!!!!!!!!!!!
+# for i in range(0+2, (len(all_lists)+1)+2):
+idx=2  # 3, 4, 5, 6, 7, 8, 9, 10
+idxx=1  # 2, 3, ,  ,  ,  ,  , 4
+while idx != rows_date+1:
+    if ws_a.cell(row=idx, column=1).value != ws_a.cell(row=idx, column=2).value:
+        ws_a.move_range("B{0}:C{1}".format(idx, len(all_lists)+idxx), rows=1)
+        idx += 1
+        idxx += 1
+    else:
+        idx += 1
 
 for column in ws_a.columns:
     for cell in column:
@@ -86,8 +94,6 @@ print("=> OPEN THE FILE")
 end_time=time.time()
 time_spent = end_time - start_time
 print(f"=> FIN. ({str(round((time_spent), 4))} sec.)")
-# print(all_dates[len(all_lists)-1])
-# print(all_day_fx[len(all_lists)-1])
 
 
 # 문제1 : 프로그램 작동 중에 마우스 움직임 감지되면 로그인 팝업 뜸
@@ -96,3 +102,7 @@ print(f"=> FIN. ({str(round((time_spent), 4))} sec.)")
 #         빠지는 날이 없는 ref_date와 day_fx[n]을 비교해서, 서로 같을 때는 날짜와 환율을
 #         같지 않을 때는 날짜만 입력
 #         아니면 반복문 활용해서, 날짜가 같지 않은 부분부터 제일 마지막까지 블록지정하고 칸 옮기기
+# 고민3 : 리스트에 넣어놓고, 그걸 꺼내서 각 셀이랑 비교하는 건 못하겠다. 내 능력치의 한계겠지
+#         엑셀 파일 내에서, column 내의 셀끼리 비교해서 옮기는 건 해볼만 할 것 같은데
+#         그럴싸하게 코드를 작성해도 원한는 결과가 안나온다. (max_row를 활용해 본다?!?!)
+# 고민3' : 차트 만드는데, 굳이 날짜가 다 필요한가???
