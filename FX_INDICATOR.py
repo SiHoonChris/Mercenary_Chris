@@ -19,10 +19,12 @@ browser=webdriver.Chrome(options=options)
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Side, Font
+from openpyxl.chart import Reference, LineChart
+from openpyxl.chart.axis import DateAxis
 import subprocess
 import pyautogui
 
-
+# 웹스크래핑; 웹페이지 열기
 url = "https://kr.investing.com/currencies/usd-krw-historical-data"
 browser.get(url)
 browser.find_element_by_xpath("//*[@id='flatDatePickerCanvasHol']").click()
@@ -36,44 +38,42 @@ browser.find_element_by_xpath("//*[@id='applyBtn']").click()
 time.sleep(2)
 print("=> OPEN THE WEB PAGE")
 
+# 엑셀; 기본 틀
 file_today=str(today).replace("-",".")
 wb=Workbook()
 ws_a=wb.active
 ws_a.title=f"2022.01.01~{file_today}"
 ws_b=wb.create_sheet("Chart")
-ws_a.append(["DATE", "", "FX RATE"])
+ws_a.append(["DATE", "FX RATE"])
 ws_a.column_dimensions["A"].width=11
-ws_a.column_dimensions["B"].width=11  # only two column needed
-ws_a.column_dimensions["C"].width=9
-
-timedelta=today-ref_date
-rows_date=timedelta.days+1
-td=datetime.timedelta(days=1)
-for d in range(2, rows_date+2):
-    ws_a["A{}".format(d)]=ref_date
-    ref_date += td
+ws_a.column_dimensions["B"].width=9
 print("=> OPEN THE EXCEL - PRIMARY SETTING")
 
+# 웹스크래핑; 데이터 가져오기 / dictionary 활용
+dict={}
 soup = BeautifulSoup(browser.page_source, "lxml")
 all_lists=soup.find("tbody").find_all("tr")
 for i in range(0, len(all_lists)):
     dates=all_lists[i].find_all("td")[0].get_text().replace("년 ", "-").replace("월 ", "-").replace("일", "")
     day_fx=all_lists[i].find_all("td")[1].get_text().replace(",", "")
-    ws_a.cell(row=(len(all_lists)+1)-i, column=2).value=dates
-    ws_a.cell(row=(len(all_lists)+1)-i, column=3).value=day_fx
+    dict[dates]=day_fx
 
-# !!!!!!!!!!!!!!!!!!
-# for i in range(0+2, (len(all_lists)+1)+2):
-idx=2  # 3, 4, 5, 6, 7, 8, 9, 10
-idxx=1  # 2, 3, ,  ,  ,  ,  , 4
-while idx != rows_date+1:
-    if ws_a.cell(row=idx, column=1).value != ws_a.cell(row=idx, column=2).value:
-        ws_a.move_range("B{0}:C{1}".format(idx, len(all_lists)+idxx), rows=1)
-        idx += 1
-        idxx += 1
-    else:
-        idx += 1
+# 엑셀; 데이터 입력
+timedelta=today-ref_date
+rows_date=timedelta.days+1
+td=datetime.timedelta(days=1)
+for d in range(2, rows_date+2):
+    ws_a["A{}".format(d)]=ref_date
+    ws_a["B{}".format(d)]=str(dict.get(str(ws_a["A{}".format(d)].value)))
+    if ws_a["B{}".format(d)].value == "None":
+        ws_a["B{}".format(d)] = ws_a["B{}".format(d-1)].value
+    ref_date += td
+ws_a["B2"]=ws_a["B4"].value
+ws_a["B3"]=ws_a["B4"].value  # 2022년도에는 적용되나, 2021년도에는 적용 안됨 / 코드 수정 필요
+for n in range(2, rows_date+2):
+    ws_a["B{}".format(n)]=float(ws_a["B{}".format(n)].value)  # 입력된 환율 값이 텍스트 형식으로 입력됨, 숫자로 바꿈
 
+# 엑셀; 셀 서식
 for column in ws_a.columns:
     for cell in column:
         cell.alignment = Alignment(horizontal="center", vertical="center")
@@ -85,24 +85,43 @@ ws_a["A1"].font=Font(bold=True)
 ws_a["B1"].font=Font(bold=True)
 print("=> WEB SCRAPPING - FILL IN THE CELLS")
 
+# 엑셀; 차트 만들기
+# 차트 크기; 가로:A~P, 세로:1~22
+chart_value=Reference(ws_a, min_row=1, min_col=2, max_row=rows_date+1, max_col=2)
+
+chart=LineChart()
+chart.title=f"FX RATE - 2022.01.01~{file_today}"
+chart.style=12
+chart.y_axis.title="WON/DOLLAR"
+chart.y_axis.crossAx=500
+chart.x_axis=DateAxis(crossAx=100)
+chart.x_axis.number_format="d-mmm"
+chart.x_axis.majorTimeUnit="days"
+chart.x_axis.tile="Date"
+
+chart.add_data(chart_value, titles_from_data=True)
+date_value = Reference(ws_a, min_col=1, min_row=2, max_row=rows_date+1)
+chart.set_categories(date_value)
+
+ws_b.add_chart(chart, "A1")
+
+# 엑셀; 파일 저장
 wb.save(f"2022.01.01~{file_today} , FX(WON-DOLLAR).xlsx")
 print("=> SAVE THE FILE")
 subprocess.Popen([f"2022.01.01~{file_today} , FX(WON-DOLLAR).xlsx"], shell=True)
-time.sleep(1)
+time.sleep(2)
 pyautogui.hotkey("ctrl", "s")
 print("=> OPEN THE FILE")
 end_time=time.time()
 time_spent = end_time - start_time
 print(f"=> FIN. ({str(round((time_spent), 4))} sec.)")
-
+# print(dict)
 
 # 문제1 : 프로그램 작동 중에 마우스 움직임 감지되면 로그인 팝업 뜸
+# 해결1 : headless chrome
 # 문제3 : 날짜 중간중간 비어있는 날짜 있음. 해당 날짜 채우고, 그 날에 대한 FX는 전날 값 복붙
-# 생각3 : 웹페이지에서 가져온 날짜(dates)와 환율 데이터(day_fx)를 각 리스트에 append하고,
-#         빠지는 날이 없는 ref_date와 day_fx[n]을 비교해서, 서로 같을 때는 날짜와 환율을
-#         같지 않을 때는 날짜만 입력
-#         아니면 반복문 활용해서, 날짜가 같지 않은 부분부터 제일 마지막까지 블록지정하고 칸 옮기기
-# 고민3 : 리스트에 넣어놓고, 그걸 꺼내서 각 셀이랑 비교하는 건 못하겠다. 내 능력치의 한계겠지
-#         엑셀 파일 내에서, column 내의 셀끼리 비교해서 옮기는 건 해볼만 할 것 같은데
-#         그럴싸하게 코드를 작성해도 원한는 결과가 안나온다. (max_row를 활용해 본다?!?!)
-# 고민3' : 차트 만드는데, 굳이 날짜가 다 필요한가???
+# 해결3 : dictionary 사용 ; key로 날짜 넣고, value로 환율 정보 넣음. A column에 있는 row 값으로
+#         dictionary 내에 있는 key값 검색 / 22.1.1, 22.1.2의 환율 값은 22.1.3에서 갖다 씀
+# 문제4 : 엑셀 B2, B3셀에 대한 값 문제, 연도에 상관없이, 문제없이 코드 잘 돌아가도록 만들기
+# 문제5 : 차트 서식. 우선 openpyxl docs 보고 따라하긴 했는데, 사실 뭐가 뭔지 제대로 이해 안됨
+#         https://openpyxl.readthedocs.io/en/stable/charts/line.html#id1
