@@ -21,7 +21,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill
 from openpyxl.chart import Reference, LineChart
 from openpyxl.chart.axis import DateAxis
-from openpyxl.chart.layout import Layout, ManualLayout
 import statistics
 
 import subprocess
@@ -39,7 +38,6 @@ today=datetime.date.today()
 browser.find_element_by_id("endDate").send_keys(str(today))
 browser.find_element_by_xpath("//*[@id='applyBtn']").click()
 time.sleep(2)
-print("=> OPEN THE WEB PAGE")
 
 # 엑셀; 기본 틀
 file_today=str(today).replace("-",".")
@@ -52,7 +50,6 @@ ws_a.column_dimensions["A"].width=11
 ws_a.column_dimensions["B"].width=9
 ws_a.column_dimensions["C"].width=10
 ws_a.column_dimensions["D"].width=10
-print("=> OPEN THE EXCEL - PRIMARY SETTING")
 
 # 웹스크래핑; 데이터 가져오기 / dictionary 활용
 dict={}
@@ -72,9 +69,9 @@ for d in range(2, rows_date+2):
     ws_a["B{}".format(d)]=str(dict.get(str(ws_a["A{}".format(d)].value)))
     if ws_a["B{}".format(d)].value == "None":
         ws_a["B{}".format(d)] = ws_a["B{}".format(d-1)].value
+        if ws_a["B{}".format(d)].value == "FX RATE":
+            ws_a["B{}".format(d)]=all_lists[len(all_lists)-1].find_all("td")[1].get_text().replace(",", "")
     ref_date += td
-ws_a["B2"]=ws_a["B4"].value
-ws_a["B3"]=ws_a["B4"].value  # 2022년도에는 적용되나, 2021년도에는 적용 안됨 / 코드 수정 필요
 for n in range(2, rows_date+2):
     ws_a["B{}".format(n)]=float(ws_a["B{}".format(n)].value)
 
@@ -99,10 +96,8 @@ ws_a["B1"].font=Font(bold=True)
 ws_a["B1"].fill = PatternFill(fgColor="ffff00", fill_type="solid")
 ws_a["C1"].font=Font(bold=True)
 ws_a["D1"].font=Font(bold=True)
-print("=> WEB SCRAPPING - FILL IN THE CELLS")
 
 # 엑셀; 차트 만들기
-# 차트 크기; 가로:A~P, 세로:1~22
 chart_value=Reference(ws_a, min_row=1, min_col=2, max_row=rows_date+1, max_col=4)
 chart=LineChart()
 chart.title=f"FX RATE - 2022.01.01~{file_today}"
@@ -115,23 +110,28 @@ chart.add_data(chart_value, titles_from_data=True)
 date_value = Reference(ws_a, min_col=1, min_row=2, max_row=rows_date+1)
 chart.set_categories(date_value)
 
+chart.width=39.5
+chart.height=13.9
 ws_b.add_chart(chart, "A1")
 
 # 엑셀; 파일 저장
 wb.save(f"2022.01.01 ~ {file_today} , FX(WON-DOLLAR).xlsx")
-print("=> SAVE THE FILE")
 subprocess.Popen([f"2022.01.01~{file_today} , FX(WON-DOLLAR).xlsx"], shell=True)
 time.sleep(2)
 pyautogui.hotkey("ctrl", "s")
-print("=> OPEN THE FILE")
 end_time=time.time()
 time_spent = end_time - start_time
 print(f"=> FIN. ({str(round((time_spent), 4))} sec.)")
 
 
 # 문제4 : 엑셀 B2, B3셀에 대한 값 문제, 연도에 상관없이, 문제없이 코드 잘 돌아가도록 만들기
+# 해결4 : dict의 key 중 제일 빠른 날짜(여기서는 2022-01-03)보다 더 이른 날짜에 대한 값이 필요할 때 문제 발생
+#         이 경우에는 제일 빠른 날짜의 환율 정보("all_lists[len(all_lists)-1].find_all("td")[1]. ...") 직접 반환
 # 문제5 : 차트 서식. 우선 openpyxl docs 보고 따라하긴 했는데, 사실 뭐가 뭔지 제대로 이해 안됨. 답답함
 #         차트는 크기 조절 못하나??
 #         https://openpyxl.readthedocs.io/en/stable/charts/line.html#id1
+# 해결5 : 크기 조절 ; stackoverflow 참고
+#         https://stackoverflow.com/questions/36603753/openpyxl-change-the-dimension-of-a-chart
 # 문제6 : '"2022.01.01~2022.08.01 , FX(WON-DOLLAR).xlsx"'은(는) 내부 또는 외부 명령, 실행할 수 있는 프로그램,
 #         또는 배치 파일이 아닙니다.(subprocess.Popen가 안됨)
+# 고민6 : 고급 시스템 설정보기 를 몇 번을 건드려도 안된다. ANACONDA 설치하고나서부터 안되는 거 같은데... 
