@@ -1,9 +1,6 @@
 # 원/달러 환율 데이터 정리
-# a) 환율 정보 끌어와서 엑셀로 정리, 차트 만들기
-#    (엑셀자료는 웹페이지에서도 받을 수 있음. 내가 원하는건 한 번에 차트까지 만들어지는거)
-# b) open/close/high/low/end price 다 갖고 와서 캔들차트 만들기 / 일, 주, 월봉
+# a) 필요한 정보만 끌어와서 엑셀로 정리, 차트 만들기
 
-# a)
 import datetime
 import time
 start_time=time.time()
@@ -115,23 +112,12 @@ chart.height=13.9
 ws_b.add_chart(chart, "A1")
 
 # 엑셀; 파일 저장
-wb.save(f"2022.01.01 ~ {file_today} , FX(WON-DOLLAR).xlsx")
-subprocess.Popen([f"2022.01.01~{file_today} , FX(WON-DOLLAR).xlsx"], shell=True)
+file_save=f"2022.01.01 ~ {file_today} , FX(WON-DOLLAR).xlsx"
+wb.save(file_save)
+subprocess.Popen([file_save], shell=True)
 time.sleep(2)
+pyautogui.hotkey("ctrl", "pgdn")
 pyautogui.hotkey("ctrl", "s")
 end_time=time.time()
 time_spent = end_time - start_time
 print(f"=> FIN. ({str(round((time_spent), 4))} sec.)")
-
-
-# 문제4 : 엑셀 B2, B3셀에 대한 값 문제, 연도에 상관없이, 문제없이 코드 잘 돌아가도록 만들기
-# 해결4 : dict의 key 중 제일 빠른 날짜(여기서는 2022-01-03)보다 더 이른 날짜에 대한 값이 필요할 때 문제 발생
-#         이 경우에는 제일 빠른 날짜의 환율 정보("all_lists[len(all_lists)-1].find_all("td")[1]. ...") 직접 반환
-# 문제5 : 차트 서식. 우선 openpyxl docs 보고 따라하긴 했는데, 사실 뭐가 뭔지 제대로 이해 안됨. 답답함
-#         차트는 크기 조절 못하나??
-#         https://openpyxl.readthedocs.io/en/stable/charts/line.html#id1
-# 해결5 : 크기 조절 ; stackoverflow 참고
-#         https://stackoverflow.com/questions/36603753/openpyxl-change-the-dimension-of-a-chart
-# 문제6 : '"2022.01.01~2022.08.01 , FX(WON-DOLLAR).xlsx"'은(는) 내부 또는 외부 명령, 실행할 수 있는 프로그램,
-#         또는 배치 파일이 아닙니다.(subprocess.Popen가 안됨)
-# 고민6 : 고급 시스템 설정보기 를 몇 번을 건드려도 안된다. ANACONDA 설치하고나서부터 안되는 거 같은데... 
