@@ -23,24 +23,26 @@ import statistics
 import subprocess
 import pyautogui
 
+ref_date=datetime.date(2022,1,1)
+today=datetime.date.today()
+
 # 웹스크래핑; 웹페이지 열기
 url = "https://kr.investing.com/currencies/usd-krw-historical-data"
 browser.get(url)
 browser.find_element_by_xpath("//*[@id='flatDatePickerCanvasHol']").click()
 browser.find_element_by_id("startDate").clear()
-browser.find_element_by_id("startDate").send_keys("2022/01/01")
+browser.find_element_by_id("startDate").send_keys(str(ref_date))
 browser.find_element_by_id("endDate").clear()
-ref_date=datetime.date(2022,1,1)
-today=datetime.date.today()
 browser.find_element_by_id("endDate").send_keys(str(today))
 browser.find_element_by_xpath("//*[@id='applyBtn']").click()
 time.sleep(2)
 
 # 엑셀; 기본 틀
+file_ref=str(ref_date).replace("-",".")
 file_today=str(today).replace("-",".")
 wb=Workbook()
 ws_a=wb.active
-ws_a.title=f"2022.01.01~{file_today}"
+ws_a.title=f"{file_ref}~{file_today}"
 ws_b=wb.create_sheet("Chart")
 ws_a.append(["DATE", "FX RATE", "Mean", "Median"])
 ws_a.column_dimensions["A"].width=11
@@ -97,7 +99,7 @@ ws_a["D1"].font=Font(bold=True)
 # 엑셀; 차트 만들기
 chart_value=Reference(ws_a, min_row=1, min_col=2, max_row=rows_date+1, max_col=4)
 chart=LineChart()
-chart.title=f"FX RATE - 2022.01.01~{file_today}"
+chart.title=f"FX RATE - {file_ref}~{file_today}"
 chart.y_axis.crossAx=500
 chart.x_axis=DateAxis(crossAx=100)
 chart.x_axis.number_format="yyyy-mm-dd"
@@ -112,7 +114,7 @@ chart.height=13.9
 ws_b.add_chart(chart, "A1")
 
 # 엑셀; 파일 저장
-file_save=f"2022.01.01 ~ {file_today} , FX(WON-DOLLAR).xlsx"
+file_save=f"{file_ref} ~ {file_today} , FX(WON-DOLLAR).xlsx"
 wb.save(file_save)
 subprocess.Popen([file_save], shell=True)
 time.sleep(2)
