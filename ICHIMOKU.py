@@ -28,13 +28,31 @@ df=df[['날짜', '종가']]
 
 # 1. CONVERSION LINE (CL)
 #    전환선 ; (과거 9일 동안 최고가 + 과거 9일 동안 최저가)/2 
-df['전환선']=df['종가']
+df['전환선']=0
 for i in range(0,  257):
     if i < 9:
-        df.iloc[i,-1]=0
+        pass
     else:
-        max_value=max(df.iloc[i-9:i-1 , 1])
-        min_value=min(df.iloc[i-9:i-1 , 1])
+        max_value=max(df.iloc[i-9:i , 1])
+        min_value=min(df.iloc[i-9:i , 1])
         df.iloc[i,-1]=(max_value+min_value)/2
-df['전환선']
+
+# 2. BASE LINE (BL)
+#    기준선 ; (과거 26일 동안 최고가 + 과거 26일 동안 최저가)/2
+df['기준선']=0
+for i in range(0,  257):
+    if i < 26:
+        pass
+    else:
+        max_value=max(df.iloc[i-26:i , 1])
+        min_value=min(df.iloc[i-26:i , 1])
+        df.iloc[i,-1]=(max_value+min_value)/2
+
+# 3. LEADING SPAN A(1) (LS_1)
+#    선행스팬A(1) ; (당일 기준선 + 당일 전환선)/2 를 26일 선행해서 배치 *당일:0일, 26일 선행:25일
+#    전환선, 기준선 모두 값이 0이 아닐 때부터 선행스팬의 값이 구해짐(전환선, 기준선 모두 0이 아닌 시점으로부터 26일 선행) 
+df['선행스팬A(1)']=(df['전환선']+df['기준선'])/2
+
+# 저장
 print(df)
+df.to_excel('ichimoku_a.xlsx')
