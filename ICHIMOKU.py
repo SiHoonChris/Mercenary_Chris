@@ -17,5 +17,29 @@ last_idx=df.index[-1]
 for i in range(1, 26):
     df.loc[last_idx+i] = ['', '', '', '', '', '', '미정', '미정']
 
+# 전환선
+for i in df.index:
+    if i < 9:
+        df.loc[i, '전환선']=''
+    elif 9 <= i <= last_idx:
+        max_value=max(df.loc[i-9:i-1 , '종가'])
+        min_value=min(df.loc[i-9:i-1 , '종가'])
+        df.loc[i, '전환선']=(max_value+min_value)/2
+    else:
+        df.loc[i, '전환선']=''
+
+# 기준선
+for i in df.index:
+    if i < 26:
+        df.loc[i, '기준선']=''
+    elif 26 <= i <= last_idx:
+        max_value=max(df.loc[i-26:i-1 , '종가'])
+        min_value=min(df.loc[i-26:i-1 , '종가'])
+        df.loc[i, '기준선']=(max_value+min_value)/2
+    else:
+        df.loc[i, '기준선']=''
+
+# loc에서의 슬라이싱(마지막 포함) 이랑 iloc에서의 슬라이싱(마지막 포함X) 다름 
+
 print(df)
-df.to_csv('일목균형표 중간점검.csv', encoding='utf-8-sig')
+df.to_excel('일목균형표 중간점검.xlsx')
