@@ -10,12 +10,12 @@ df['전환선']=0
 df['기준선']=0
 df['선행스팬A(1)']=0
 df['선행스팬B(2)']=0
-df['구름대']='미정'
-df['추세']='미정'
+df['구름대']=''
+df['추세']=''
 
 last_idx=df.index[-1]
 for i in range(1, 26):
-    df.loc[last_idx+i] = ['', '', '', '', '', '', '미정', '미정']
+    df.loc[last_idx+i] = ['', 0, '', '', 0, 0, '', '미정']
 
 # 전환선
 for i in df.index:
@@ -27,7 +27,7 @@ for i in df.index:
         df.loc[i, '전환선']=(max_value+min_value)/2
     else:
         df.loc[i, '전환선']=''
-
+        
 # 기준선
 for i in df.index:
     if i < 26:
@@ -39,7 +39,60 @@ for i in df.index:
     else:
         df.loc[i, '기준선']=''
 
-# loc에서의 슬라이싱(마지막 포함) 이랑 iloc에서의 슬라이싱(마지막 포함X) 다름 
+# 선행스팬A(1)
+for i in df.index:
+    if i < 26:
+        df.loc[i, '선행스팬A(1)']=0
+        df.loc[i+25, '선행스팬A(1)']=0
+    elif 26 <= i <= last_idx:
+        df.loc[i+25, '선행스팬A(1)']=(df.loc[i, '전환선']+df.loc[i, '기준선'])/2
+    else:
+        pass
+    
+# 선행스팬B(2)
+for i in df.index:
+    if i < 51:
+        df.loc[i, '선행스팬B(2)']=0
+        df.loc[i+25, '선행스팬B(2)']=0
+    elif 51 <= i <= last_idx:
+        max_value=max(df.loc[i-51:i , '종가'])
+        min_value=min(df.loc[i-51:i , '종가'])
+        df.loc[i+25, '선행스팬B(2)']=(max_value+min_value)/2
+    else:
+        pass
+    
+# 구름대
+for i in df.index:
+    if df.loc[i, '선행스팬B(2)']==0:
+        pass
+    else:
+        if df.loc[i, '선행스팬A(1)'] > df.loc[i, '선행스팬B(2)']:
+            df.loc[i, '구름대'] = '양운'
+        elif df.loc[i, '선행스팬A(1)'] < df.loc[i, '선행스팬B(2)']:
+            df.loc[i, '구름대'] = '음운'
+        else:
+            df.loc[i, '구름대'] = '구름선'
+            
+# 추세
+for i in df.index:
+    if df.loc[i, '선행스팬B(2)']==0 or df.loc[i, '종가']==0:
+        pass
+    else:
+        if df.loc[i, '종가'] > df.loc[i, '선행스팬A(1)'] and df.loc[i, '종가'] > df.loc[i, '선행스팬B(2)']:
+            df.loc[i, '추세'] = '상승'
+        elif df.loc[i, '종가'] < df.loc[i, '선행스팬A(1)'] and df.loc[i, '종가'] < df.loc[i, '선행스팬B(2)']:
+            df.loc[i, '추세'] = '하락'
+        else:
+            df.loc[i, '추세'] = '전환'
+            
+# 데이터 가공 : 정리
+for i in range(1, 26):
+    df.loc[last_idx+i, '종가'] = ''
+for i in df.index:
+    if df.loc[i, '선행스팬A(1)']==0:
+        df.loc[i, '선행스팬A(1)']=''
+    if df.loc[i, '선행스팬B(2)']==0:
+        df.loc[i, '선행스팬B(2)']=''
 
 print(df)
-df.to_excel('일목균형표 중간점검.xlsx')
+df.to_excel('일목균형표(IVV, 21.01.01~21.12.31).xlsx')
