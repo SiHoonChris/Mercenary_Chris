@@ -150,7 +150,7 @@ for i in range(1, ws.max_row+1):
         pass
 
 # 저장 & 바로보기
-wb.save("일목균형표-excel(IVV, 21.01.01~21.12.31).xlsx")
-subprocess.Popen(["일목균형표-excel(IVV, 21.01.01~21.12.31).xlsx"], shell=True)
+wb.save(title)
+subprocess.Popen([title], shell=True)
 time.sleep(2)
 pyautogui.hotkey("ctrl", "s")
