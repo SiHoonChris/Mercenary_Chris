@@ -1,3 +1,8 @@
+import subprocess
+import pyautogui
+import time
+from openpyxl.styles import Border, Side,  PatternFill
+from openpyxl import load_workbook
 import pandas as pd
 
 # 데이터 가공 : 기본 프레임
@@ -94,5 +99,58 @@ for i in df.index:
     if df.loc[i, '선행스팬B(2)']==0:
         df.loc[i, '선행스팬B(2)']=''
 
+# DataFrame 저장
 print(df)
-df.to_excel('일목균형표(IVV, 21.01.01~21.12.31).xlsx')
+title='일목균형표(IVV, 21.01.01~21.12.31).xlsx'
+df.to_excel(title)
+
+
+# 엑셀 작업
+wb = load_workbook(title)
+ws = wb.active
+
+# 전체 셀에 대해 라인 구분
+thin_border = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
+for row in ws.iter_rows():
+    for cell in row:
+        cell.border=thin_border
+
+# 인덱스 Column 삭제
+ws.delete_cols(1)
+
+# 셀 너비 조정(날짜, 선행스팬1(A), 선행스팬2(B))
+ws.column_dimensions["A"].width=16
+ws.column_dimensions["E"].width=11
+ws.column_dimensions["F"].width=11
+
+# 구름대, 색 구분
+# 양운:빨강, 음운:파랑, 구름선:노랑, '값 없음':'색 없음'
+for i in range(1, ws.max_row+1):
+    if ws["G{}".format(i)].value=='양운':
+        ws["G{}".format(i)].fill = PatternFill(fgColor="ff704d", fill_type="solid")
+    elif ws["G{}".format(i)].value=='음운':
+        ws["G{}".format(i)].fill = PatternFill(fgColor="6699ff", fill_type="solid")
+    elif ws["G{}".format(i)].value=='구름선':
+        ws["G{}".format(i)].fill = PatternFill(fgColor="ffff99", fill_type="solid")
+    else:
+        pass
+
+# 추세, 색 구분
+# 상승:빨강, 하락:파랑, 전환:노랑, 미정:회색(#F2F2F2), '값 없음':'색 없음'
+for i in range(1, ws.max_row+1):
+    if ws["H{}".format(i)].value=='상승':
+        ws["H{}".format(i)].fill = PatternFill(fgColor="ff704d", fill_type="solid")
+    elif ws["H{}".format(i)].value=='하락':
+        ws["H{}".format(i)].fill = PatternFill(fgColor="6699ff", fill_type="solid")
+    elif ws["H{}".format(i)].value=='전환':
+        ws["H{}".format(i)].fill = PatternFill(fgColor="ffff99", fill_type="solid")
+    elif ws["H{}".format(i)].value=='미정':
+        ws["H{}".format(i)].fill = PatternFill(fgColor="cccccc", fill_type="solid")
+    else:
+        pass
+
+# 저장 & 바로보기
+wb.save("일목균형표-excel(IVV, 21.01.01~21.12.31).xlsx")
+subprocess.Popen(["일목균형표-excel(IVV, 21.01.01~21.12.31).xlsx"], shell=True)
+time.sleep(2)
+pyautogui.hotkey("ctrl", "s")
