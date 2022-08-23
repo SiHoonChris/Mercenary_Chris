@@ -149,6 +149,9 @@ for i in range(1, ws.max_row+1):
     else:
         pass
 
+# 틀 고정
+ws.freeze_panes = "B2"
+
 # 저장 & 바로보기
 wb.save(title)
 subprocess.Popen([title], shell=True)
