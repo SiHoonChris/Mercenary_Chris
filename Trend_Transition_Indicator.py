@@ -75,6 +75,7 @@ for i in range(0, last_idx+1):
     else:
         pass
 
+df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
 df['CL'] = pd.to_numeric(df['CL'], errors='coerce')
 df['BL'] = pd.to_numeric(df['BL'], errors='coerce')
 df['BL'] = pd.to_numeric(df['BL'], errors='coerce')
@@ -83,6 +84,13 @@ df['LS_B'] = pd.to_numeric(df['LS_B'], errors='coerce')
 df['ML'] = pd.to_numeric(df['ML'], errors='coerce')
 df['UL'] = pd.to_numeric(df['UL'], errors='coerce')
 df['LL'] = pd.to_numeric(df['LL'], errors='coerce')
+
+# Condition 1~3
+for i in range(1, last_idx+1):
+    if df.loc[i,'Price'] > df.loc[i,'LS_A'] and df.loc[i-1,'Price'] < df.loc[i, 'LS_B'] < df.loc[i,'Price']:
+        df.loc[i,'Cond.1']='O'
+    elif df.loc[i,'Price'] > df.loc[i,'LS_B'] and df.loc[i-1,'Price'] < df.loc[i, 'LS_A'] < df.loc[i,'Price']:
+        df.loc[i,'Cond.1']='O'
 
 print(df)
 df.to_excel('AAPL, 19.8.27~22.8.26, TTI-signal.xlsx')
@@ -103,6 +111,10 @@ plt.plot(date, df['LL'][:last_idx+1], label='BB_LL', color='blue', lw=0.75)
 plt.fill_between(date, LS_A, LS_B, where=(LS_A >= LS_B), color='orange', alpha=0.5, interpolate=True)
 plt.fill_between(date, LS_A, LS_B, where=(LS_A < LS_B), color='skyblue', alpha=0.5, interpolate=True)
 
+for i in range(1, last_idx+1):
+    if df.loc[i,'Cond.1']=='O':
+        plt.axvline(x=date[i], lw=0.5)
+
 plt.title('AAPL, 19.8.27~22.8.26, TTI-signal', fontsize=18)
 plt.xticks([df.loc[0,'Date'], df.loc[last_idx,'Date']])
 plt.legend(ncol=6, loc=(0.025, 0.925))
@@ -111,8 +123,8 @@ plt.savefig('AAPL, 19.8.27~22.8.26, TTI-signal.png')
 
 
 # To-do
-# 1. line 14~23, line77~84 줄이기
-# 2. Cond.1과 Cond.2 사이 구간에 채색
+# 1. line 14~23, line77~84 줄이기 => list에 넣고, for문으로 한 번에 처리하려 했는데 안됨. 그냥 써야지 뭐
+# 2. Cond.1과 Cond.2 사이 구간에 채색 => 일단 Cond.1에 해당하는 부분에 수직선 긋는 건 함. / 조건에 포함 안된 부분 이유 확인하기
 # 참고
 # Condition.1 - 종가가 일목균형표 구름대 상향 돌파  
 # Condition.2 - 1)이 발생한 시점 이후에, 볼린저밴드의 상단선의 n자 모양 형성(접선의 기울기=0)  
