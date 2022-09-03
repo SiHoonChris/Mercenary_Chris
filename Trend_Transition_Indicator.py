@@ -83,20 +83,49 @@ df['ML'] = pd.to_numeric(df['ML'], errors='coerce')
 df['UL'] = pd.to_numeric(df['UL'], errors='coerce')
 df['LL'] = pd.to_numeric(df['LL'], errors='coerce')
 
-# Condition
-idx=1
-while idx != last_idx-1:
+# Condition for Red Area
+red_start_list=[]
+for idx in range(1, last_idx):
     if df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx, 'LL']:
-        df.loc[idx,'Cond.']='a'
-        idx+=1
+        df.loc[idx,'Cond.']='red_start'
+        red_start_list.append(idx)
+    elif df.loc[idx,'UL'] > df.loc[idx-1,'UL'] and df.loc[idx,'UL'] > df.loc[idx+1,'UL']:
+        df.loc[idx,'Cond.']='red_end'
     else:
-        idx+=1
-        if df.loc[idx,'UL'] > df.loc[idx-1,'UL'] and df.loc[idx,'UL'] > df.loc[idx+1,'UL']:
-            df.loc[idx,'Cond.']='b'
-            idx+=1
-        else:
-            idx+=1
+        pass
+red_start = df.loc[df['Cond.']=='red_start'].index
+red_end = df.loc[df['Cond.']=='red_end'].index
+red_end_list=[]
+for i in range(0, len(red_start)):
+    n=0
+    while red_start[i] >= red_end[n]:
+        n+=1
+        if red_start[i] < red_end[n]:
+            red_end_list.append(red_end[n])
+print(red_start_list)
+print(red_end_list)
 
+# Condition for Blue Area
+blue_start_list=[]
+for idx in range(1, last_idx):
+    if df.loc[idx, 'UL'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price']:
+        df.loc[idx,'Cond.']='blue_start'
+        blue_start_list.append(idx)
+    elif df.loc[idx,'LL'] < df.loc[idx-1,'LL'] and df.loc[idx,'LL'] < df.loc[idx+1,'LL']:
+        df.loc[idx,'Cond.']='blue_end'
+    else:
+        pass
+blue_start = df.loc[df['Cond.']=='blue_start'].index
+blue_end = df.loc[df['Cond.']=='blue_end'].index
+blue_end_list=[]
+for i in range(0, len(blue_start)):
+    n=0
+    while blue_start[i] >= blue_end[n]:
+        n+=1
+        if blue_start[i] < blue_end[n]:
+            blue_end_list.append(blue_end[n])
+print(blue_start_list)
+print(blue_end_list)
 
 print(df)
 df.to_excel('AAPL, 19.8.27~22.8.26, TTI-signal.xlsx')
@@ -108,20 +137,21 @@ plt.figure(figsize=(18, 12))
 date=df['Date'][:last_idx+1]
 LS_A=df['LS_A'][:last_idx+1]
 LS_B=df['LS_B'][:last_idx+1]
-plt.plot(date, df['Price'][:last_idx+1], label='Price', color='black')
-plt.plot(date, LS_A, label='ICMK_LS_A', color='orange', alpha=0.5)
-plt.plot(date, LS_B, label='ICMK_LS_B', color='skyblue', alpha=0.5)
-plt.plot(date, df['ML'][:last_idx+1], label='BB_ML', color='green', ls="--", lw=0.75, alpha=0.6)
-plt.plot(date, df['UL'][:last_idx+1], label='BB_UL', color='red', lw=0.75)
-plt.plot(date, df['LL'][:last_idx+1], label='BB_LL', color='blue', lw=0.75)
-plt.fill_between(date, LS_A, LS_B, where=(LS_A >= LS_B), color='orange', alpha=0.5, interpolate=True)
-plt.fill_between(date, LS_A, LS_B, where=(LS_A < LS_B), color='skyblue', alpha=0.5, interpolate=True)
+plt.plot(date, df['Price'][:last_idx+1], label='Price', color='black', lw=0.8)
+plt.plot(date, LS_A, label='ICMK_LS_A', color='orange', lw=0.6)
+plt.plot(date, LS_B, label='ICMK_LS_B', color='skyblue', lw=0.6)
+plt.plot(date, df['ML'][:last_idx+1], label='BB_ML', color='green', ls="--", lw=0.4, alpha=0.6)
+plt.plot(date, df['UL'][:last_idx+1], label='BB_UL', color='red', lw=0.4)
+plt.plot(date, df['LL'][:last_idx+1], label='BB_LL', color='blue', lw=0.4)
+plt.fill_between(date, LS_A, LS_B, where=(LS_A >= LS_B), color='orange', alpha=0.3, interpolate=True)
+plt.fill_between(date, LS_A, LS_B, where=(LS_A < LS_B), color='skyblue', alpha=0.3, interpolate=True)
 
-for i in range(1, last_idx+1):
-    if df.loc[i,'Cond.']=='a':
-        plt.axvline(x=date[i], lw=0.5, color='r')
-    elif df.loc[i,'Cond.']=='b':
-        plt.axvline(x=date[i], lw=0.5, color='b')
+for i in range(0, len(red_start_list)):
+    plt.axvspan(date[red_start_list[i]], date[red_end_list[i]], alpha=0.3, color='red')
+    plt.hlines(max(df.loc[red_start_list[i]:red_end_list[i], 'Price']), date[red_start_list[i]], date[red_end_list[i]], color='green')
+for i in range(0, len(blue_start_list)):
+    plt.axvspan(date[blue_start_list[i]], date[blue_end_list[i]], alpha=0.3, color='blue')
+    plt.hlines(min(df.loc[blue_start_list[i]:blue_end_list[i], 'Price']), date[blue_start_list[i]], date[blue_end_list[i]], color='yellow')
 
 plt.title('AAPL, 19.8.27~22.8.26, TTI-signal', fontsize=18)
 plt.xticks([df.loc[0,'Date'], df.loc[last_idx,'Date']])
@@ -130,9 +160,7 @@ plt.legend(ncol=6, loc=(0.025, 0.925))
 plt.savefig('AAPL, 19.8.27~22.8.26, TTI-signal.png')
 
 
-# To-do
-# Condition => 어떻게 하면 순서대로 적용할 수 있을까??
-# 참고
-# Condition.1 - 종가가 일목균형표 구름대 상향 돌파(이 때 볼린저밴드 하단선은 일목균형표 구름 아래 위치)
-# Condition.2 - 1)이 발생한 시점 이후에, 볼린저밴드의 상단선의 n자 모양 형성(접선의 기울기=0)  
-# Condition.3 - 2)가 발생한 시점 이후에, 1)과 2)가 발생한 시점 사이에 형성된 종가의 최고가 보다 높은 종가 형성
+# 1) 상향추세로의 전환 중 양운을 뚫고 올라가는 차트
+# 2) 하향추세로의 전환 중 음운을 뚫고 내려가는 차트
+# 1), 2)에 대한 지표 생성 누락
+# => 이거만 완성하면 진짜 완성
