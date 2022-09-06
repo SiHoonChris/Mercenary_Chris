@@ -86,7 +86,8 @@ df['LL'] = pd.to_numeric(df['LL'], errors='coerce')
 # Condition for Red Area
 red_start_list=[]
 for idx in range(1, last_idx):
-    if df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx, 'LL']:
+    if df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx, 'LL'] or\
+    df.loc[idx,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx, 'LL']:
         df.loc[idx,'Cond.']='red_start'
         red_start_list.append(idx)
     elif df.loc[idx,'UL'] > df.loc[idx-1,'UL'] and df.loc[idx,'UL'] > df.loc[idx+1,'UL']:
@@ -108,7 +109,8 @@ print(red_end_list)
 # Condition for Blue Area
 blue_start_list=[]
 for idx in range(1, last_idx):
-    if df.loc[idx, 'UL'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price']:
+    if df.loc[idx, 'UL'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price'] or\
+    df.loc[idx, 'UL'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx,'Price']:
         df.loc[idx,'Cond.']='blue_start'
         blue_start_list.append(idx)
     elif df.loc[idx,'LL'] < df.loc[idx-1,'LL'] and df.loc[idx,'LL'] < df.loc[idx+1,'LL']:
@@ -149,18 +151,28 @@ plt.fill_between(date, LS_A, LS_B, where=(LS_A < LS_B), color='skyblue', alpha=0
 for i in range(0, len(red_start_list)):
     plt.axvspan(date[red_start_list[i]], date[red_end_list[i]], alpha=0.3, color='red')
     plt.hlines(max(df.loc[red_start_list[i]:red_end_list[i], 'Price']), date[red_start_list[i]], date[red_end_list[i]], color='green')
+    plt.text(date[red_start_list[i]], max(df.loc[red_start_list[i]:red_end_list[i], 'Price'])+1, max(df.loc[red_start_list[i]:red_end_list[i], 'Price']), ha='left', alpha=0.5)
 for i in range(0, len(blue_start_list)):
     plt.axvspan(date[blue_start_list[i]], date[blue_end_list[i]], alpha=0.3, color='blue')
     plt.hlines(min(df.loc[blue_start_list[i]:blue_end_list[i], 'Price']), date[blue_start_list[i]], date[blue_end_list[i]], color='yellow')
-
+    plt.text(date[blue_start_list[i]], min(df.loc[blue_start_list[i]:blue_end_list[i], 'Price'])-2.5, min(df.loc[blue_start_list[i]:blue_end_list[i], 'Price']), ha='center', alpha=0.5)
+    
 plt.title('AAPL, 19.8.27~22.8.26, TTI-signal', fontsize=18)
 plt.xticks([df.loc[0,'Date'], df.loc[last_idx,'Date']])
 plt.legend(ncol=6, loc=(0.025, 0.925))
 
-plt.savefig('AAPL, 19.8.27~22.8.26, TTI-signal.png')
+plt.savefig('AAPL, 19.8.27~22.8.26, TTI-signal.png', dpi=150)
 
 
-# 1) 상향추세로의 전환 중 양운을 뚫고 올라가는 차트
-# 2) 하향추세로의 전환 중 음운을 뚫고 내려가는 차트
-# 1), 2)에 대한 지표 생성 누락
-# => 이거만 완성하면 진짜 완성
+# 1.
+# 1) 상향추세로의 전환 중 양운을 뚫고 올라가는 케이스
+# 2) 하향추세로의 전환 중 음운을 뚫고 내려가는 케이스
+# 1), 2)에 대한 내용 추가
+# 2.
+# Colored-Column 내에 horizontal line의 가격 표시
+# 3.
+# 이미지 저장시 dpi 조절
+
+# 4. 3년치 데이터에 대해 적용한 내용을 한정된 공간 안에서 모두 출력하자니 눈에 잘 안들어온다.
+# 5. 코드가 더럽게 쓰여졌다. 좀 깔끔하고, 처음보는 사람도 한 눈에 알아볼 수 있도록 명시적으로 정리할 필요가 있겠다.
+# 6. 그래프에서 각 선의 두께 때문에 잘못된 인지가 생긴다. 캔들차트 상에서 구현하면 한 눈에 알아볼 수 있을 텐데
