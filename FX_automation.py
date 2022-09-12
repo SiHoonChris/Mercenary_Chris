@@ -3,15 +3,15 @@ import pandas as pd
 def trim(df):
     df.sort_index(ascending=False, inplace=True)
     df.reset_index(drop=True, inplace=True)
-    df.drop(columns=df.columns[2:], inplace=True)
+    df.drop(columns=df.columns[5:], inplace=True) # 거래량, 변동만 제거
 def SMA(last_idx):
     for i in range(0, last_idx+1):
         if i < 364:
             pass
         else:
             df.loc[i,'SMA-ML']=df.loc[i-364:i, 'Price'].mean()
-            df.loc[i,'SMA-UL']=(df.loc[i-364:i, 'Price'].mean())*(1+0.05)
-            df.loc[i,'SMA-LL']=(df.loc[i-364:i, 'Price'].mean())*(1-0.05)
+            df.loc[i,'SMA-UL']=df.loc[i-364:i, 'Price'].mean()+df.loc[i,'ATR']
+            df.loc[i,'SMA-LL']=df.loc[i-364:i, 'Price'].mean()-df.loc[i,'ATR']
 def Decision(last_idx):
     for i in range(0, last_idx+1):
         if i < 299:
@@ -75,21 +75,39 @@ def BB_Band(last_idx):
             df.loc[i,'LL']=df.loc[i,'ML'] - df.loc[i-19:i,'Price'].std()*2
         else:
             pass
-
+def TR(last_idx):
+    for i in range(0, last_idx+1):
+        if i==0:
+            df.loc[i,'TR']=abs(df.loc[i,'High']-df.loc[i,'Low'])
+        else:
+            TR1=abs(df.loc[i,'High']-df.loc[i,'Low'])
+            TR2=abs(df.loc[i,'High']-df.loc[i-1,'Price'])
+            TR3=abs(df.loc[i,'Low']-df.loc[i-1,'Price'])
+            df.loc[i,'TR']=max(TR1, TR2, TR3)
+def ATR(last_idx):
+    for i in range(0, last_idx+1):
+        if i < 364:
+            pass
+        elif i==364:
+            df.loc[i,'ATR']=df.loc[i-364:i,'TR'].mean()
+        else:
+            df.loc[i,'ATR']=df.loc[i-1,'TR'].mean()*(364/365)+df.loc[i,'TR']*(1/365)
 
 # 데이터 생성
-file='USD_KRW Historical Data, 19.9.9~22.9.9'  # investing.com
+file='BTC_USD Bitfinex Historical Data, 19.9.10~22.9.10'  # investing.com
 df = pd.read_excel(file+'.xlsx')
 trim(df)
 last_idx=df.index[-1]
 for i in range(1, 27):
-        df.loc[last_idx+i] = ['', '']
+        df.loc[last_idx+i] = ['', '', '', '', '']
 
-column_heads=['SMA-ML', 'SMA-UL', 'SMA-LL', 'Decision', 'CL', 'BL', 'LS_A', 'LS_B', 'ML', 'UL', 'LL', 'Cond.r', 'Cond.b']
+column_heads=['SMA-ML', 'TR', 'ATR',  'SMA-UL', 'SMA-LL', 'Decision', 'CL', 'BL', 'LS_A', 'LS_B', 'ML', 'UL', 'LL', 'Cond.r', 'Cond.b']
 for col in column_heads:
     df[col]=''
     df[col]=pd.to_numeric(df[col])
-    
+
+TR(last_idx)
+ATR(last_idx)
 SMA(last_idx)
 Decision(last_idx)
 ICMK_CL(last_idx)
@@ -97,7 +115,6 @@ ICMK_BL(last_idx)
 ICMK_LS_A(last_idx)
 ICMK_LS_B(last_idx)
 BB_Band(last_idx)
-
 
 red_start_list=[]
 red_end_list=[]
@@ -114,13 +131,23 @@ print(red_start_list)
 
 red_start = df.loc[df['Cond.r']=='red_start'].index
 red_end = df.loc[df['Cond.r']=='red_end'].index
-for i in range(0, len(red_start)):
-    n=0
-    while red_start[i] >= red_end[n]:
-        n+=1
-        if red_start[i] < red_end[n]:
-            red_end_list.append(red_end[n])
+if red_start[-1] < red_end[-1]:
+    for i in range(0, len(red_start)):
+        n=0
+        while red_start[i] >= red_end[n]:
+            n+=1
+            if red_start[i] < red_end[n]:
+                red_end_list.append(red_end[n])
+else:
+    for i in range(0, len(red_start)-1):
+        n=0
+        while red_start[i] >= red_end[n]:
+            n+=1
+            if red_start[i] < red_end[n]:
+                red_end_list.append(red_end[n])
+    red_end_list.append(red_start[len(red_start)-1])
 print(red_end_list)
+
 
 blue_start_list=[]
 blue_end_list=[]
@@ -137,21 +164,26 @@ print(blue_start_list)
 
 blue_start = df.loc[df['Cond.b']=='blue_start'].index
 blue_end = df.loc[df['Cond.b']=='blue_end'].index
-for i in range(0, len(blue_start)):
-    n=0
-    while blue_start[i] >= blue_end[n]:
-        n+=1
-        if blue_start[i] < blue_end[n]:
-            blue_end_list.append(blue_end[n])
+if blue_start[-1] < blue_end[-1]:
+    for i in range(0, len(blue_start)):
+        n=0
+        while blue_start[i] >= blue_end[n]:
+            n+=1
+            if blue_start[i] < blue_end[n]:
+                blue_end_list.append(blue_end[n])
+else:
+    for i in range(0, len(blue_start)-1):
+        n=0
+        while blue_start[i] >= blue_end[n]:
+            n+=1
+            if blue_start[i] < blue_end[n]:
+                blue_end_list.append(blue_end[n])
+    blue_end_list.append(blue_start[len(blue_start)-1])
 print(blue_end_list)
 
 
 print(df)
 df.to_excel(file+', graph.xlsx')
-
-# red_start(또는 blue_start) 이후로 red_end(또는 blue_end)가 나오지 않으면 error가 나는 것 같다.
-
-
 
 
 # 데이터 시각화
@@ -187,7 +219,7 @@ for i in range(0, len(blue_s)):
     plt.hlines(min(df.loc[blue_s[i]:blue_e[i], 'Price']), date[blue_s[i]], date[blue_e[i]], color='yellow')
     plt.text(date[blue_s[i]], min(df.loc[blue_s[i]:blue_e[i], 'Price'])-2.5, min(df.loc[blue_s[i]:blue_e[i], 'Price']), ha='center', alpha=0.5)
 
-plt.title(f'ETH/USD, SMA +/-5%,  for {last_idx}days', fontsize=20)
+plt.title(f'USD/BTC, SMA +/-365ATR,  for {last_idx}days', fontsize=20)
 plt.grid(axis='x')
 plt.legend()
 
