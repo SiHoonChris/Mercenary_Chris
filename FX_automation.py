@@ -1,67 +1,19 @@
-from statistics import pstdev
+from statistics import mean, pstdev
 import matplotlib.pyplot as plt
 import pandas as pd
 def trim(df):
     df.sort_index(ascending=False, inplace=True)
     df.reset_index(drop=True, inplace=True)
     df.drop(columns=df.columns[5:], inplace=True) # 거래량, 등락률 제거
-def SMA(last_idx):
+def SMA(period, last_idx):
     for i in range(0, last_idx+1):
-        if i < 249:
+        if i < (period-1):
             pass
         else:
-            df.loc[i,'SMA-ML']=df.loc[i-249:i, 'Price'].mean()
-            df.loc[i,'SMA-UL']=df.loc[i-249:i, 'Price'].mean()+df.loc[i,'ATR']*2
-            df.loc[i,'SMA-LL']=df.loc[i-249:i, 'Price'].mean()-df.loc[i,'ATR']*2
-def Decision(last_idx):
-    for i in range(0, last_idx+1):
-        if i < 299:
-            pass
-        else:
-            if df.loc[i,'Price'] > df.loc[i,'SMA-UL']:
-                df.loc[i,'Decision']='HIGH'
-            elif df.loc[i,'Price'] < df.loc[i,'SMA-LL']:
-                df.loc[i,'Decision']='LOW'
-            else:
-                df.loc[i,'Decision']='NEUTRAL'
-def ICMK_CL(last_idx):
-    for i in df.index:
-        df['CL']=pd.to_numeric(df['CL'])
-        if 8 <= i <= last_idx:
-            max_value=max(max(df.loc[i-8:i, 'Price']), max(df.loc[i-8:i, 'Open']), max(df.loc[i-8:i, 'High']), max(df.loc[i-8:i, 'Low']))
-            min_value=min(min(df.loc[i-8:i, 'Price']), min(df.loc[i-8:i, 'Open']), min(df.loc[i-8:i, 'High']), min(df.loc[i-8:i, 'Low']))
-            df.loc[i,'CL']=(max_value+min_value)/2
-def ICMK_BL(last_idx):
-    for i in df.index:
-        df['BL']=pd.to_numeric(df['BL'])
-        if 25 <= i <= last_idx:
-            max_value=max(max(df.loc[i-25:i, 'Price']), max(df.loc[i-25:i, 'Open']), max(df.loc[i-25:i, 'High']), max(df.loc[i-25:i, 'Low']))
-            min_value=min(min(df.loc[i-25:i, 'Price']), min(df.loc[i-25:i, 'Open']), min(df.loc[i-25:i, 'High']), min(df.loc[i-25:i, 'Low']))
-            df.loc[i,'BL']=(max_value+min_value)/2
-def ICMK_LS_A(last_idx):  # 당일 포함해서 26일 선행
-    for i in df.index:
-        df['LS_A']=pd.to_numeric(df['LS_A'])
-        if 25 <= i <= last_idx:
-            df.loc[i+25,'LS_A']=(df.loc[i,'CL']+df.loc[i,'BL'])/2
-def ICMK_LS_B(last_idx):  # 당일 포함해서 26일 선행
-    for i in df.index:
-        df['LS_B']=pd.to_numeric(df['LS_B'])
-        if 51 <= i <= last_idx:
-            max_value=max(max(df.loc[i-51:i, 'Price']), max(df.loc[i-51:i, 'Open']), max(df.loc[i-51:i, 'High']), max(df.loc[i-51:i, 'Low']))
-            min_value=min(min(df.loc[i-51:i, 'Price']), min(df.loc[i-51:i, 'Open']), min(df.loc[i-51:i, 'High']), min(df.loc[i-51:i, 'Low']))
-            df.loc[i+25, 'LS_B']=(max_value+min_value)/2
-def BB_TP(last_idx):
-    for i in range(0, last_idx+1):
-        df.loc[i,'TP']=(df.loc[i,'High']+df.loc[i,'Low']+df.loc[i,'Price'])/3
-def BB_Band(last_idx):  # 표준편차는 모집단(Population)에 대한 표준편차 사용
-    for i in range(0, last_idx+1):
-        if i > 18:
-            df.loc[i,'BOLM']=df.loc[i-19:i,'TP'].mean()
-            df.loc[i,'BOLU']=df.loc[i,'BOLM'] + pstdev(df.loc[i-19:i,'TP'])*2
-            df.loc[i,'BOLD']=df.loc[i,'BOLM'] - pstdev(df.loc[i-19:i,'TP'])*2
-        else:
-            pass
-def TR(last_idx):
+            df.loc[i,'SMA-ML']=df.loc[i-(period-1):i, 'Price'].mean()
+            df.loc[i,'SMA-UL']=df.loc[i-(period-1):i, 'Price'].mean()+df.loc[i,'ATR']*2
+            df.loc[i,'SMA-LL']=df.loc[i-(period-1):i, 'Price'].mean()-df.loc[i,'ATR']*2
+def ATR(period, last_idx): # 단순 ATR
     for i in range(0, last_idx+1):
         if i==0:
             df.loc[i,'TR']=abs(df.loc[i,'High']-df.loc[i,'Low'])
@@ -70,19 +22,82 @@ def TR(last_idx):
             TR2=abs(df.loc[i,'High']-df.loc[i-1,'Price'])
             TR3=abs(df.loc[i,'Low']-df.loc[i-1,'Price'])
             df.loc[i,'TR']=max(TR1, TR2, TR3)
-def ATR(last_idx): # SEQUENTIAL ATR 말고, 단순 ATR로 적용
-    # for i in range(0, last_idx+1):
-    #     if i < 364:
-    #         pass
-    #     elif i==364:
-    #         df.loc[i,'ATR']=df.loc[i-364:i,'TR'].mean()
-    #     else:
-    #         df.loc[i,'ATR']=df.loc[i-1,'TR'].mean()*(364/365)+df.loc[i,'TR']*(1/365)
     for i in range(0, last_idx+1):
-        if i < 249:
+        if i < (period-1):
             pass
         else:
-            df.loc[i,'ATR']=df.loc[i-249:i,'TR'].mean()
+            df.loc[i,'ATR']=df.loc[i-(period-1):i,'TR'].mean()
+class Ichimoku():
+    def __init__(self, CL, BL, LS_B, last_idx):  # CL=9, BL=26, LS_B=52, last_idx=(df.index[-1] before its expansion)
+        self.CL=CL-1
+        self.BL=BL-1
+        self.LS_B=LS_B-1
+        self.last_idx=last_idx
+    def ConversionLine(self):
+        for i in df.index:
+            if self.CL <= i <= self.last_idx:
+                max_value=max(max(df.loc[i-self.CL:i, 'Price']), max(df.loc[i-self.CL:i, 'Open']),\
+                     max(df.loc[i-self.CL:i,'High']), max(df.loc[i-self.CL:i, 'Low']))
+                min_value=min(min(df.loc[i-self.CL:i, 'Price']), min(df.loc[i-self.CL:i, 'Open']),\
+                     min(df.loc[i-self.CL:i, 'High']), min(df.loc[i-self.CL:i, 'Low']))
+                df.loc[i,'CL']=(max_value+min_value)/2
+    def BaseLine(self):
+        for i in df.index:
+            if self.BL <= i <= self.last_idx:
+                max_value=max(max(df.loc[i-self.BL:i, 'Price']), max(df.loc[i-self.BL:i, 'Open']),\
+                     max(df.loc[i-self.BL:i, 'High']), max(df.loc[i-self.BL:i, 'Low']))
+                min_value=min(min(df.loc[i-self.BL:i, 'Price']), min(df.loc[i-self.BL:i, 'Open']),\
+                     min(df.loc[i-self.BL:i, 'High']), min(df.loc[i-self.BL:i, 'Low']))
+                df.loc[i,'BL']=(max_value+min_value)/2
+    def LeadingSpan_A(self):  # 당일 포함해서 26일 선행
+        CL_dict={}
+        for i in df.index:
+            if self.CL <= i <= self.last_idx:
+                max_value=max(max(df.loc[i-self.CL:i, 'Price']), max(df.loc[i-self.CL:i, 'Open']),\
+                     max(df.loc[i-self.CL:i, 'High']), max(df.loc[i-self.CL:i, 'Low']))
+                min_value=min(min(df.loc[i-self.CL:i, 'Price']), min(df.loc[i-self.CL:i, 'Open']),\
+                     min(df.loc[i-self.CL:i, 'High']), min(df.loc[i-self.CL:i, 'Low']))
+                CL_dict[i]=(max_value+min_value)/2
+        BL_dict={}
+        for i in df.index:
+            if self.BL <= i <= self.last_idx:
+                max_value=max(max(df.loc[i-self.BL:i, 'Price']), max(df.loc[i-self.BL:i, 'Open']),\
+                     max(df.loc[i-self.BL:i, 'High']), max(df.loc[i-self.BL:i, 'Low']))
+                min_value=min(min(df.loc[i-self.BL:i, 'Price']), min(df.loc[i-self.BL:i, 'Open']),\
+                     min(df.loc[i-self.BL:i, 'High']), min(df.loc[i-self.BL:i, 'Low']))
+                BL_dict[i]=(max_value+min_value)/2
+        for i in df.index:
+            if self.BL <= i <= self.last_idx:
+                df.loc[i+25,'LS_A']=(CL_dict.get(i)+BL_dict.get(i))/2
+    def LeadingSpan_B(self):  # 당일 포함해서 26일 선행
+        for i in df.index:
+            if self.LS_B <= i <= self.last_idx:
+                max_value=max(max(df.loc[i-self.LS_B:i, 'Price']), max(df.loc[i-self.LS_B:i, 'Open']),\
+                     max(df.loc[i-self.LS_B:i, 'High']), max(df.loc[i-self.LS_B:i, 'Low']))
+                min_value=min(min(df.loc[i-self.LS_B:i, 'Price']), min(df.loc[i-self.LS_B:i, 'Open']),\
+                     min(df.loc[i-self.LS_B:i, 'High']), min(df.loc[i-self.LS_B:i, 'Low']))
+                df.loc[i+25, 'LS_B']=(max_value+min_value)/2
+def BB_Band(period, n, last_idx):  # period=20, n=2, 표준편차는 모집단(Population)에 대한 표준편차 사용
+    # TP=[]
+    # for i in range(0, last_idx+1):
+    #     tp=(df.loc[i,'High']+df.loc[i,'Low']+df.loc[i,'Price'])/3
+    #     TP.append(tp)
+    # for i in range(0, last_idx+1):
+    #     if i < (period-1):
+    #         pass
+    #     else:
+    #         df.loc[i,'BOLM']=mean(TP[i-(period-1):i])
+    #         df.loc[i,'BOLU']=df.loc[i,'BOLM'] + pstdev(TP[i-(period-1):i])*n
+    #         df.loc[i,'BOLD']=df.loc[i,'BOLM'] - pstdev(TP[i-(period-1):i])*n  
+    for i in range(0, last_idx+1):
+        df.loc[i,'TP']=(df.loc[i,'High']+df.loc[i,'Low']+df.loc[i,'Price'])/3
+    for i in range(0, last_idx+1):
+        if i < (period-1):
+            pass
+        else:
+            df.loc[i,'BOLM']=df.loc[i-(period-1):i, 'TP'].mean()
+            df.loc[i,'BOLU']=df.loc[i,'BOLM'] + pstdev(df.loc[i-(period-1):i,'TP'])*n
+            df.loc[i,'BOLD']=df.loc[i,'BOLM'] - pstdev(df.loc[i-(period-1):i,'TP'])*n 
 
 
 # 데이터 생성
@@ -90,24 +105,20 @@ file='GOOGL 19.09.13~22.09.12'  # investing.com
 df = pd.read_excel(file+'.xlsx')
 trim(df)
 last_idx=df.index[-1]
-for i in range(1, 27):
+for i in range(1, 26):
         df.loc[last_idx+i] = ['', '', '', '', '']
 
-column_heads=['SMA-ML', 'TR', 'ATR',  'SMA-UL', 'SMA-LL', 'Decision', 'CL', 'BL', 'LS_A', 'LS_B', 'TP', 'BOLM', 'BOLU', 'BOLD', 'Cond.r', 'Cond.b']
+column_heads=['SMA-ML', 'TR', 'ATR',  'SMA-UL', 'SMA-LL', 'Decision', 'LS_A', 'LS_B', 'TP', 'BOLM', 'BOLU', 'BOLD', 'Cond.r', 'Cond.b']
 for col in column_heads:
     df[col]=''
     df[col]=pd.to_numeric(df[col])
 
-TR(last_idx)
-ATR(last_idx)
-SMA(last_idx)
-Decision(last_idx)
-ICMK_CL(last_idx)
-ICMK_BL(last_idx)
-ICMK_LS_A(last_idx)
-ICMK_LS_B(last_idx)
-BB_TP(last_idx)
-BB_Band(last_idx)
+ATR(250, last_idx)
+SMA(250, last_idx)
+ichimoku=Ichimoku(9, 26, 52, last_idx)
+ichimoku.LeadingSpan_A()
+ichimoku.LeadingSpan_B()
+BB_Band(20, 2, last_idx)
 
 red_start_list=[]
 red_end_list=[]
@@ -212,11 +223,12 @@ for i in range(0, len(blue_s)):
     plt.hlines(min(df.loc[blue_s[i]:blue_e[i], 'Price']), date[blue_s[i]], date[blue_e[i]], color='yellow')
     plt.text(date[blue_s[i]], min(df.loc[blue_s[i]:blue_e[i], 'Price'])-2.5, min(df.loc[blue_s[i]:blue_e[i], 'Price']), ha='center', alpha=0.5)
 
-plt.title(f'GOOGL, SMA +/-250ATR,  for {last_idx}days', fontsize=20)
+plt.title(f'GOOGL, for {last_idx+1}days', fontsize=20)
 plt.grid(axis='x')
 plt.legend()
 
 plt.savefig('for graph, '+file+'.png', dpi=150)
+
 
 
 # APPENDIX.
