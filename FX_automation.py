@@ -5,30 +5,31 @@ def trim(df):
     df.sort_index(ascending=False, inplace=True)
     df.reset_index(drop=True, inplace=True)
     df.drop(columns=df.columns[5:], inplace=True) # 거래량, 등락률 제거
-def SMA(period, last_idx):
+def SMA_ATR(period, last_idx): # period=250
+    TR=[]
+    for i in range(0, last_idx+1):
+        if i==0:
+            TR.append(abs(df.loc[i,'High']-df.loc[i,'Low']))
+        else:
+            TR1=abs(df.loc[i,'High']-df.loc[i,'Low'])
+            TR2=abs(df.loc[i,'High']-df.loc[i-1,'Price'])
+            TR3=abs(df.loc[i,'Low']-df.loc[i-1,'Price'])
+            TR.append(max(TR1, TR2, TR3))
+    ATR=[]
+    for i in range(0, last_idx+1):
+        if i < (period-1):
+            ATR.append("")
+        else:
+            ATR.append(mean(TR[i-(period-1):(i+1)]))
     for i in range(0, last_idx+1):
         if i < (period-1):
             pass
         else:
             df.loc[i,'SMA-ML']=df.loc[i-(period-1):i, 'Price'].mean()
-            df.loc[i,'SMA-UL']=df.loc[i-(period-1):i, 'Price'].mean()+df.loc[i,'ATR']*2
-            df.loc[i,'SMA-LL']=df.loc[i-(period-1):i, 'Price'].mean()-df.loc[i,'ATR']*2
-def ATR(period, last_idx): # 단순 ATR
-    for i in range(0, last_idx+1):
-        if i==0:
-            df.loc[i,'TR']=abs(df.loc[i,'High']-df.loc[i,'Low'])
-        else:
-            TR1=abs(df.loc[i,'High']-df.loc[i,'Low'])
-            TR2=abs(df.loc[i,'High']-df.loc[i-1,'Price'])
-            TR3=abs(df.loc[i,'Low']-df.loc[i-1,'Price'])
-            df.loc[i,'TR']=max(TR1, TR2, TR3)
-    for i in range(0, last_idx+1):
-        if i < (period-1):
-            pass
-        else:
-            df.loc[i,'ATR']=df.loc[i-(period-1):i,'TR'].mean()
+            df.loc[i,'SMA-UL']=df.loc[i-(period-1):i, 'Price'].mean()+ATR[i]*2
+            df.loc[i,'SMA-LL']=df.loc[i-(period-1):i, 'Price'].mean()-ATR[i]*2
 class Ichimoku():
-    def __init__(self, CL, BL, LS_B, last_idx):  # CL=9, BL=26, LS_B=52, last_idx=(df.index[-1] before its expansion)
+    def __init__(self, CL, BL, LS_B, last_idx):  # CL=9, BL=26, LS_B=52, last_idx=(df.index[-1], before its expansion)
         self.CL=CL-1
         self.BL=BL-1
         self.LS_B=LS_B-1
@@ -78,26 +79,17 @@ class Ichimoku():
                      min(df.loc[i-self.LS_B:i, 'High']), min(df.loc[i-self.LS_B:i, 'Low']))
                 df.loc[i+25, 'LS_B']=(max_value+min_value)/2
 def BB_Band(period, n, last_idx):  # period=20, n=2, 표준편차는 모집단(Population)에 대한 표준편차 사용
-    # TP=[]
-    # for i in range(0, last_idx+1):
-    #     tp=(df.loc[i,'High']+df.loc[i,'Low']+df.loc[i,'Price'])/3
-    #     TP.append(tp)
-    # for i in range(0, last_idx+1):
-    #     if i < (period-1):
-    #         pass
-    #     else:
-    #         df.loc[i,'BOLM']=mean(TP[i-(period-1):i])
-    #         df.loc[i,'BOLU']=df.loc[i,'BOLM'] + pstdev(TP[i-(period-1):i])*n
-    #         df.loc[i,'BOLD']=df.loc[i,'BOLM'] - pstdev(TP[i-(period-1):i])*n  
+    TP=[]
     for i in range(0, last_idx+1):
-        df.loc[i,'TP']=(df.loc[i,'High']+df.loc[i,'Low']+df.loc[i,'Price'])/3
+        tp=(df.loc[i,'High']+df.loc[i,'Low']+df.loc[i,'Price'])/3
+        TP.append(tp)
     for i in range(0, last_idx+1):
         if i < (period-1):
             pass
         else:
-            df.loc[i,'BOLM']=df.loc[i-(period-1):i, 'TP'].mean()
-            df.loc[i,'BOLU']=df.loc[i,'BOLM'] + pstdev(df.loc[i-(period-1):i,'TP'])*n
-            df.loc[i,'BOLD']=df.loc[i,'BOLM'] - pstdev(df.loc[i-(period-1):i,'TP'])*n 
+            df.loc[i,'BOLM']=mean(TP[i-(period-1):(i+1)])
+            df.loc[i,'BOLU']=df.loc[i,'BOLM'] + pstdev(TP[i-(period-1):(i+1)])*n
+            df.loc[i,'BOLD']=df.loc[i,'BOLM'] - pstdev(TP[i-(period-1):(i+1)])*n
 
 
 # 데이터 생성
@@ -108,13 +100,12 @@ last_idx=df.index[-1]
 for i in range(1, 26):
         df.loc[last_idx+i] = ['', '', '', '', '']
 
-column_heads=['SMA-ML', 'TR', 'ATR',  'SMA-UL', 'SMA-LL', 'Decision', 'LS_A', 'LS_B', 'TP', 'BOLM', 'BOLU', 'BOLD', 'Cond.r', 'Cond.b']
+column_heads=['SMA-ML', 'SMA-UL', 'SMA-LL', 'Decision', 'LS_A', 'LS_B', 'BOLM', 'BOLU', 'BOLD', 'Cond.r', 'Cond.b']
 for col in column_heads:
     df[col]=''
     df[col]=pd.to_numeric(df[col])
 
-ATR(250, last_idx)
-SMA(250, last_idx)
+SMA_ATR(250, last_idx)
 ichimoku=Ichimoku(9, 26, 52, last_idx)
 ichimoku.LeadingSpan_A()
 ichimoku.LeadingSpan_B()
@@ -252,12 +243,13 @@ plt.savefig('for graph, '+file+'.png', dpi=150)
 #      또한, 매매에 있어 각 개인의 전략과 가치관에 따른 가장 합리적인 기준점을 제시한다.
 #      그렇기에 매매를 하기에 앞서, 해당 종목에 대한 정확한 이해와 분석이 선행되어야 한다. )
 #    운용 예시)
-#    - 1) SMA-UL 위에서 RED AREA 기준 가격 발생, 이후 기준 가격 돌파 : 추가 대량 매수
-#         (가격이 고평가 된 상태이나 더 상승할 것으로 판단, 보유 비중을 높일 필요가 있음)
+#    - 1) SMA-UL 위에서 RED AREA 기준 가격 발생, 이후 기준 가격 돌파 : 추가 소량 매수
+#         (가격이 고평가 된 상태이나 더 상승할 것으로 판단. 보유 비중을 높일 필요가 있음)
 #    - 2) SMA-UL 위에서 BLUE AREA 기준 가격 발생, 이후 기준 가격 돌파 : 분할 소량 매도
-#         (가격이 고평가 된 상태이나 저평가로 전환될 가능성이 있음, 보유 비중을 약간은 높일 필요가 있음)
+#         (가격이 고평가 된 상태이며, 향후 저평가로 전환될 가능성이 있음. 상대적으로 높은 가격 매도하여 시세차익의 일부를 실현함과
+#          동시에 보유 비중은 줄일 필요가 있음)
 #    - 3) SMA 밴드 내에서 RED/BLUE AREA 기준 가격 발생 : 매매 보류
-#    - 4) SMA-LL 아래에서 RED AREA 기준 가격 발생, 이후 기준 가격 돌파 : 추가 소량 매수
-#         (가격이 저평가 된 상태이나 고평가로 전환될 가능성이 있음, 보유 비중을 약간은 높일 필요가 있음)
+#    - 4) SMA-LL 아래에서 RED AREA 기준 가격 발생, 이후 기준 가격 돌파 : 추가 대량 매수
+#         (가격이 저평가 된 상태이며, 향후 고평가로 전환될 가능성이 있음. 상대적으로 낮은 가격에 매수하여 보유 비중을 높일 필요가 있음)
 #    - 5) SMA-LL 아래에서 BLUE AREA 기준 가격 발생, 이후 기준 가격 돌파 : 분할 대량 매도
-#         (가격이 저평가 된 상태이나 더 하락할 것으로 판단, 보유 비중을 줄일 필요가 있음)
+#         (가격이 저평가 된 상태이나 더 하락할 것으로 판단, 보유 비중을 대폭 줄일 필요가 있음)
