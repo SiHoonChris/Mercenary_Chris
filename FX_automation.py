@@ -5,6 +5,7 @@ def trim(df):
     df.sort_index(ascending=False, inplace=True)
     df.reset_index(drop=True, inplace=True)
     df.drop(columns=df.columns[5:], inplace=True) # 거래량, 등락률 제거
+    return df.index[-1]
 def SMA_ATR(period, last_idx): # period=250
     TR=[]
     for i in range(0, last_idx+1):
@@ -90,17 +91,71 @@ def BB_Band(period, n, last_idx):  # period=20, n=2, 표준편차는 모집단(P
             df.loc[i,'BOLM']=mean(TP[i-(period-1):(i+1)])
             df.loc[i,'BOLU']=df.loc[i,'BOLM'] + pstdev(TP[i-(period-1):(i+1)])*n
             df.loc[i,'BOLD']=df.loc[i,'BOLM'] - pstdev(TP[i-(period-1):(i+1)])*n
+def color_column(last_idx):
+    red_start=[]
+    red_end_prev=[]
+    red_end=[]
+    blue_start=[]
+    blue_end_prev=[]
+    blue_end=[]
+
+    for idx in range(1, last_idx):
+        if df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx, 'BOLD'] or\
+        df.loc[idx,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx, 'BOLD']:
+            red_start.append(idx)
+        elif df.loc[idx, 'BOLU'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price'] or\
+        df.loc[idx, 'BOLU'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx,'Price']:
+            blue_start.append(idx)
+        elif df.loc[idx,'BOLU'] > df.loc[idx-1,'BOLU'] and df.loc[idx,'BOLU'] > df.loc[idx+1,'BOLU']:
+            red_end_prev.append(idx)
+        elif df.loc[idx,'BOLD'] < df.loc[idx-1,'BOLD'] and df.loc[idx,'BOLD'] < df.loc[idx+1,'BOLD']:
+            blue_end_prev.append(idx)
+        else:
+            pass
+
+    if red_start[-1] < red_end_prev[-1]:
+        for i in range(0, len(red_start)):
+            n=0
+            while red_start[i] >= red_end_prev[n]:
+                n+=1
+                if red_start[i] < red_end_prev[n]:
+                    red_end.append(red_end_prev[n])
+    else:
+        for i in range(0, len(red_start)-1):
+            n=0
+            while red_start[i] >= red_end_prev[n]:
+                n+=1
+                if red_start[i] < red_end_prev[n]:
+                    red_end.append(red_end_prev[n])
+        red_end.append(red_start[len(red_start)-1])
+
+    if blue_start[-1] < blue_end_prev[-1]:
+        for i in range(0, len(blue_start)):
+            n=0
+            while blue_start[i] >= blue_end_prev[n]:
+                n+=1
+                if blue_start[i] < blue_end_prev[n]:
+                    blue_end.append(blue_end_prev[n])
+    else:
+        for i in range(0, len(blue_start)-1):
+            n=0
+            while blue_start[i] >= blue_end_prev[n]:
+                n+=1
+                if blue_start[i] < blue_end_prev[n]:
+                    blue_end.append(blue_end_prev[n])
+        blue_end.append(blue_start[len(blue_start)-1])
+
+    return red_start, red_end, blue_start, blue_end
 
 
 # 데이터 생성
-file='GOOGL 19.09.13~22.09.12'  # investing.com
+file='SAMSUNG E. 19.09.16~22.09.16'  # investing.com
 df = pd.read_excel(file+'.xlsx')
-trim(df)
-last_idx=df.index[-1]
+last_idx = trim(df)
 for i in range(1, 26):
         df.loc[last_idx+i] = ['', '', '', '', '']
 
-column_heads=['SMA-ML', 'SMA-UL', 'SMA-LL', 'Decision', 'LS_A', 'LS_B', 'BOLM', 'BOLU', 'BOLD', 'Cond.r', 'Cond.b']
+column_heads=['SMA-ML', 'SMA-UL', 'SMA-LL', 'Decision', 'LS_A', 'LS_B', 'BOLM', 'BOLU', 'BOLD']
 for col in column_heads:
     df[col]=''
     df[col]=pd.to_numeric(df[col])
@@ -110,72 +165,7 @@ ichimoku=Ichimoku(9, 26, 52, last_idx)
 ichimoku.LeadingSpan_A()
 ichimoku.LeadingSpan_B()
 BB_Band(20, 2, last_idx)
-
-red_start_list=[]
-red_end_list=[]
-for idx in range(1, last_idx):
-    if df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx, 'BOLD'] or\
-    df.loc[idx,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx, 'BOLD']:
-        df.loc[idx,'Cond.r']='red_start'
-        red_start_list.append(idx)
-    elif df.loc[idx,'BOLU'] > df.loc[idx-1,'BOLU'] and df.loc[idx,'BOLU'] > df.loc[idx+1,'BOLU']:
-        df.loc[idx,'Cond.r']='red_end'
-    else:
-        pass
-print(red_start_list)
-
-red_start = df.loc[df['Cond.r']=='red_start'].index
-red_end = df.loc[df['Cond.r']=='red_end'].index
-if red_start[-1] < red_end[-1]:
-    for i in range(0, len(red_start)):
-        n=0
-        while red_start[i] >= red_end[n]:
-            n+=1
-            if red_start[i] < red_end[n]:
-                red_end_list.append(red_end[n])
-else:
-    for i in range(0, len(red_start)-1):
-        n=0
-        while red_start[i] >= red_end[n]:
-            n+=1
-            if red_start[i] < red_end[n]:
-                red_end_list.append(red_end[n])
-    red_end_list.append(red_start[len(red_start)-1])
-print(red_end_list)
-
-
-blue_start_list=[]
-blue_end_list=[]
-for idx in range(1, last_idx):
-    if df.loc[idx, 'BOLU'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price'] or\
-    df.loc[idx, 'BOLU'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx,'Price']:
-        df.loc[idx,'Cond.b']='blue_start'
-        blue_start_list.append(idx)
-    elif df.loc[idx,'BOLD'] < df.loc[idx-1,'BOLD'] and df.loc[idx,'BOLD'] < df.loc[idx+1,'BOLD']:
-        df.loc[idx,'Cond.b']='blue_end'
-    else:
-        pass
-print(blue_start_list)
-
-blue_start = df.loc[df['Cond.b']=='blue_start'].index
-blue_end = df.loc[df['Cond.b']=='blue_end'].index
-if blue_start[-1] < blue_end[-1]:
-    for i in range(0, len(blue_start)):
-        n=0
-        while blue_start[i] >= blue_end[n]:
-            n+=1
-            if blue_start[i] < blue_end[n]:
-                blue_end_list.append(blue_end[n])
-else:
-    for i in range(0, len(blue_start)-1):
-        n=0
-        while blue_start[i] >= blue_end[n]:
-            n+=1
-            if blue_start[i] < blue_end[n]:
-                blue_end_list.append(blue_end[n])
-    blue_end_list.append(blue_start[len(blue_start)-1])
-print(blue_end_list)
-
+red_start, red_end, blue_start, blue_end = color_column(last_idx)
 
 print(df)
 df.to_excel('for graph, '+file+'.xlsx')
@@ -201,21 +191,20 @@ plt.plot(date, df['BOLM'][:last_idx+1], label='BB_M', color='green', ls="--", lw
 plt.plot(date, df['BOLU'][:last_idx+1], label='BB_U', color='red', lw=0.4)
 plt.plot(date, df['BOLD'][:last_idx+1], label='BB_D', color='blue', lw=0.4)
 
-red_s=red_start_list
-red_e=red_end_list
-blue_s=blue_start_list
-blue_e=blue_end_list
-for i in range(0, len(red_s)):
-    plt.axvspan(date[red_s[i]], date[red_e[i]], alpha=0.3, color='red')
-    plt.hlines(max(df.loc[red_s[i]:red_e[i], 'Price']), date[red_s[i]], date[red_e[i]], color='green')
-    plt.text(date[red_s[i]], max(df.loc[red_s[i]:red_e[i], 'Price'])+1, max(df.loc[red_s[i]:red_e[i], 'Price']), ha='left', alpha=0.5)
-for i in range(0, len(blue_s)):
-    plt.axvspan(date[blue_s[i]], date[blue_e[i]], alpha=0.3, color='blue')
-    plt.hlines(min(df.loc[blue_s[i]:blue_e[i], 'Price']), date[blue_s[i]], date[blue_e[i]], color='yellow')
-    plt.text(date[blue_s[i]], min(df.loc[blue_s[i]:blue_e[i], 'Price'])-2.5, min(df.loc[blue_s[i]:blue_e[i], 'Price']), ha='center', alpha=0.5)
+for i in range(0, len(red_start)):
+    plt.axvspan(date[red_start[i]], date[red_end[i]], alpha=0.3, color='red')
+    plt.hlines(max(df.loc[red_start[i]:red_end[i], 'Price']), date[red_start[i]], date[red_end[i]], color='green')
+    plt.text(date[red_start[i]], max(df.loc[red_start[i]:red_end[i], 'Price'])+1, max(df.loc[red_start[i]:red_end[i], 'Price']),\
+         ha='left', alpha=0.5)
+for i in range(0, len(blue_start)):
+    plt.axvspan(date[blue_start[i]], date[blue_end[i]], alpha=0.3, color='blue')
+    plt.hlines(min(df.loc[blue_start[i]:blue_end[i], 'Price']), date[blue_start[i]], date[blue_end[i]], color='yellow')
+    plt.text(date[blue_start[i]], min(df.loc[blue_start[i]:blue_end[i], 'Price'])-2.5, min(df.loc[blue_start[i]:blue_end[i], 'Price']),\
+         ha='center', alpha=0.5)
 
-plt.title(f'GOOGL, for {last_idx+1}days', fontsize=20)
-plt.grid(axis='x')
+plt.title(f'SAMSUNG ELECTRONICS, for {last_idx+1}days', fontsize=20)
+plt.xticks([0, last_idx])
+plt.grid(axis='y')
 plt.legend()
 
 plt.savefig('for graph, '+file+'.png', dpi=150)
