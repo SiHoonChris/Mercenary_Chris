@@ -100,11 +100,15 @@ def color_column(last_idx):
     blue_end=[]
 
     for idx in range(1, last_idx):
-        if df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx, 'BOLD'] or\
-        df.loc[idx,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx, 'BOLD']:
+        if df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] or\
+            df.loc[idx,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] or\
+            df.loc[idx,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] or\
+            df.loc[idx,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price']:
             red_start.append(idx)
-        elif df.loc[idx, 'BOLU'] > df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price'] or\
-        df.loc[idx, 'BOLU'] > df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx,'Price']:
+        elif df.loc[idx,'LS_A'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price'] or\
+            df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx,'LS_B'] > df.loc[idx,'Price'] or\
+            df.loc[idx,'LS_B'] > df.loc[idx-1,'Price'] > df.loc[idx,'LS_A'] > df.loc[idx,'Price'] or\
+            df.loc[idx-1,'Price'] > df.loc[idx,'LS_B'] > df.loc[idx,'LS_A'] > df.loc[idx,'Price']:
             blue_start.append(idx)
         elif df.loc[idx,'BOLU'] > df.loc[idx-1,'BOLU'] and df.loc[idx,'BOLU'] > df.loc[idx+1,'BOLU']:
             red_end_prev.append(idx)
@@ -149,7 +153,7 @@ def color_column(last_idx):
 
 
 # 데이터 생성
-file='SAMSUNG E. 19.09.16~22.09.16'  # investing.com
+file='GOOGL 19.09.13~22.09.12'  # investing.com
 df = pd.read_excel(file+'.xlsx')
 last_idx = trim(df)
 for i in range(1, 26):
@@ -202,8 +206,8 @@ for i in range(0, len(blue_start)):
     plt.text(date[blue_start[i]], min(df.loc[blue_start[i]:blue_end[i], 'Price'])-2.5, min(df.loc[blue_start[i]:blue_end[i], 'Price']),\
          ha='center', alpha=0.5)
 
-plt.title(f'SAMSUNG ELECTRONICS, for {last_idx+1}days', fontsize=20)
-plt.xticks([0, last_idx])
+plt.title(f'GOOGL, for {last_idx+1}days', fontsize=20)
+# plt.xticks([0, last_idx])
 plt.grid(axis='y')
 plt.legend()
 
